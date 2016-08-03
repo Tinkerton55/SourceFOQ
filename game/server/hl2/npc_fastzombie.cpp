@@ -39,14 +39,14 @@
 #define FASTZOMBIE_MAX_PITCH			130
 #define FASTZOMBIE_SOUND_UPDATE_FREQ	0.5
 
-#define FASTZOMBIE_MAXLEAP_Z		128
+#define FASTZOMBIE_MAXLEAP_Z		192
 
 #define FASTZOMBIE_EXCITE_DIST 480.0
 
 #define FASTZOMBIE_BASE_FREQ 1.5
 
 // If flying at an enemy, and this close or closer, start playing the maul animation!!
-#define FASTZOMBIE_MAUL_RANGE	300
+#define FASTZOMBIE_MAUL_RANGE	200
 
 #ifdef HL2_EPISODIC
 
@@ -389,8 +389,8 @@ static const char *s_pLegsModel = "models/gibs/fast_zombie_legs.mdl";
 void CFastZombie::Precache( void )
 {
 	PrecacheModel("models/zombie/fast.mdl");
-#ifdef HL2_EPISODIC
 	PrecacheModel("models/zombie/Fast_torso.mdl");
+#ifdef HL2_EPISODIC
 	PrecacheScriptSound( "NPC_FastZombie.CarEnter1" );
 	PrecacheScriptSound( "NPC_FastZombie.CarEnter2" );
 	PrecacheScriptSound( "NPC_FastZombie.CarEnter3" );
@@ -459,7 +459,7 @@ int CFastZombie::SelectSchedule ( void )
 	if ( HasCondition( COND_ZOMBIE_RELEASECRAB ) )
 	{
 		// Death waits for no man. Or zombie. Or something.
-		return SCHED_ZOMBIE_RELEASECRAB;
+		return BaseClass::SelectSchedule();
 	}
 
 	if ( HasCondition( COND_FASTZOMBIE_CLIMB_TOUCH ) )
@@ -470,7 +470,7 @@ int CFastZombie::SelectSchedule ( void )
 	switch ( m_NPCState )
 	{
 	case NPC_STATE_COMBAT:
-		if ( HasCondition( COND_LOST_ENEMY ) || ( HasCondition( COND_ENEMY_UNREACHABLE ) && MustCloseToAttack() ) )
+		if (( HasCondition( COND_ENEMY_UNREACHABLE ) && MustCloseToAttack() ) )
 		{
 			// Set state to alert and recurse!
 			SetState( NPC_STATE_ALERT );
@@ -491,7 +491,7 @@ int CFastZombie::SelectSchedule ( void )
 
 			// Just lost track of our enemy. 
 			// Wander around a bit so we don't look like a dingus.
-			return SCHED_ZOMBIE_WANDER_MEDIUM;
+			return SCHED_FASTZOMBIE_RANGE_ATTACK1;
 		}
 		break;
 	}
@@ -652,7 +652,7 @@ void CFastZombie::Spawn( void )
 
 	m_fJustJumped = false;
 
-	m_fIsTorso = m_fIsHeadless = false;
+	m_fIsTorso = m_fIsHeadless = true;
 
 	if( FClassnameIs( this, "npc_fastzombie" ) )
 	{
@@ -724,20 +724,20 @@ float CFastZombie::MaxYawSpeed( void )
 	{
 	case ACT_TURN_LEFT:
 	case ACT_TURN_RIGHT:
-		return 120;
+		return 45;
 		break;
 
 	case ACT_RUN:
-		return 160;
+		return 45;
 		break;
 
 	case ACT_WALK:
 	case ACT_IDLE:
-		return 25;
+		return 45;
 		break;
 		
 	default:
-		return 20;
+		return 90;
 		break;
 	}
 }
@@ -944,8 +944,8 @@ void CFastZombie::AlertSound( void )
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-#define FASTZOMBIE_MINLEAP			200
-#define FASTZOMBIE_MAXLEAP			300
+#define FASTZOMBIE_MINLEAP			1
+#define FASTZOMBIE_MAXLEAP			2000
 float CFastZombie::InnateRange1MaxRange( void ) 
 { 
 	return FASTZOMBIE_MAXLEAP; 
@@ -970,15 +970,10 @@ int CFastZombie::RangeAttack1Conditions( float flDot, float flDist )
 		return COND_NONE;
 	}
 
-	if( gpGlobals->curtime < m_flNextAttack )
-	{
-		return( COND_NONE );
-	}
-
 	// make sure the enemy isn't on a roof and I'm in the streets (Ravenholm)
 	float flZDist;
 	flZDist = fabs( GetEnemy()->GetLocalOrigin().z - GetLocalOrigin().z );
-	if( flZDist > FASTZOMBIE_MAXLEAP_Z )
+	if( flZDist > 100.0 )
 	{
 		return COND_TOO_FAR_TO_ATTACK;
 	}
@@ -995,12 +990,6 @@ int CFastZombie::RangeAttack1Conditions( float flDot, float flDist )
 
 	if (flDot < 0.8) 
 	{
-		return COND_NONE;
-	}
-
-	if ( !IsMoving() )
-	{
-		// I Have to be running!!!
 		return COND_NONE;
 	}
 
@@ -1205,7 +1194,7 @@ void CFastZombie::LeapAttack( void )
 		//
 		// Don't jump too far/fast.
 		//
-#define CLAMP 1000.0
+#define CLAMP 500.0
 		float distance = vecJumpDir.Length();
 		if ( distance > CLAMP )
 		{
@@ -1378,7 +1367,7 @@ void CFastZombie::RunTask( const Task_t *pTask )
 			TaskComplete();
 
 			// Allow melee attacks again.
-			m_flNextMeleeAttack = gpGlobals->curtime + 0.5;
+			m_flNextMeleeAttack = gpGlobals->curtime + 0.1;
 			return;
 		}
 		break;
@@ -1440,9 +1429,9 @@ int CFastZombie::TranslateSchedule( int scheduleType )
 		{
 			float flZDist = fabs( GetEnemy()->GetLocalOrigin().z - GetLocalOrigin().z );
 			if ( flZDist > FASTZOMBIE_MAXLEAP_Z )
-				return SCHED_CHASE_ENEMY;
+				return SCHED_FASTZOMBIE_UNSTICK_JUMP;
 			else // fall through to default
-				return BaseClass::TranslateSchedule( scheduleType );
+				return SCHED_FASTZOMBIE_RANGE_ATTACK1;
 			break;
 		}
 
@@ -1555,7 +1544,6 @@ void CFastZombie::BecomeTorso( const Vector &vecTorsoForce, const Vector &vecLeg
 	CapabilitiesRemove( bits_CAP_MOVE_JUMP );
 	CapabilitiesRemove( bits_CAP_MOVE_CLIMB );
 
-	ReleaseHeadcrab( EyePosition(), vecLegsForce * 0.5, true, true, true );
 
 	BaseClass::BecomeTorso( vecTorsoForce, vecLegsForce );
 }
@@ -1567,9 +1555,9 @@ void CFastZombie::BecomeTorso( const Vector &vecTorsoForce, const Vector &vecLeg
 //-----------------------------------------------------------------------------
 bool CFastZombie::IsJumpLegal(const Vector &startPos, const Vector &apex, const Vector &endPos) const
 {
-	const float MAX_JUMP_RISE		= 220.0f;
-	const float MAX_JUMP_DISTANCE	= 512.0f;
-	const float MAX_JUMP_DROP		= 384.0f;
+	const float MAX_JUMP_RISE		= 320.0f;
+	const float MAX_JUMP_DISTANCE	= 768.0f;
+	const float MAX_JUMP_DROP		= 512.0f;
 
 	if ( BaseClass::IsJumpLegal( startPos, apex, endPos, MAX_JUMP_RISE, MAX_JUMP_DROP, MAX_JUMP_DISTANCE ) )
 	{
@@ -1657,7 +1645,7 @@ void CFastZombie::OnChangeActivity( Activity NewActivity )
 
 	if ( NewActivity == ACT_LAND )
 	{
-		m_flNextAttack = gpGlobals->curtime + 1.0;
+		m_flNextAttack = gpGlobals->curtime + 0.0;
 	}
 
 	if ( NewActivity == ACT_GLIDE )
@@ -1958,7 +1946,7 @@ void CFastZombie::VehicleLeapAttack( void )
 	Vector vecJumpDir = VecCheckToss( this, GetAbsOrigin(), vecEnemyPos, 0.1f, 1.0f, false, &vecMins, &vecMaxs );
 
 	SetAbsVelocity( vecJumpDir );
-	m_flNextAttack = gpGlobals->curtime + 2.0f;
+	m_flNextAttack = gpGlobals->curtime + 0.0f;
 	SetTouch( &CFastZombie::VehicleLeapAttackTouch );
 }
 
@@ -2072,7 +2060,6 @@ AI_BEGIN_CUSTOM_NPC( npc_fastzombie, CFastZombie )
 		"		TASK_SET_ACTIVITY				ACTIVITY:ACT_FASTZOMBIE_LEAP_STRIKE"
 		"		TASK_RANGE_ATTACK1				0"
 		"		TASK_WAIT						0.1"
-		"		TASK_FASTZOMBIE_LAND_RECOVER	0" // essentially just figure out which way to turn.
 		"		TASK_FACE_ENEMY					0"
 		"	"
 		"	Interrupts"
@@ -2117,7 +2104,6 @@ AI_BEGIN_CUSTOM_NPC( npc_fastzombie, CFastZombie )
 		"		TASK_FACE_ENEMY					0"
 		"		TASK_MELEE_ATTACK1				0"
 		"		TASK_MELEE_ATTACK1				0"
-		"		TASK_PLAY_SEQUENCE				ACTIVITY:ACT_FASTZOMBIE_FRENZY"
 		"		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_CHASE_ENEMY"
 		"		TASK_FASTZOMBIE_VERIFY_ATTACK	0"
 		"		TASK_PLAY_SEQUENCE_FACE_ENEMY	ACTIVITY:ACT_FASTZOMBIE_BIG_SLASH"
