@@ -55,7 +55,7 @@ enum
 
 #define GRENADE_PULL_MAX_DISTANCE 256.0f
 
-#define ZOMBINE_MAX_GRENADES 1
+#define ZOMBINE_MAX_GRENADES 0
 
 int ACT_ZOMBINE_GRENADE_PULL;
 int ACT_ZOMBINE_GRENADE_WALK;
@@ -201,7 +201,7 @@ void CNPC_Zombine::Spawn( void )
 	Precache();
 
 	m_fIsTorso = false;
-	m_fIsHeadless = false;
+	m_fIsHeadless = true;
 	
 #ifdef HL2_EPISODIC
 	SetBloodColor( BLOOD_COLOR_ZOMBIE );
@@ -303,7 +303,7 @@ void CNPC_Zombine::OnScheduleChange( void )
 {
 	if ( HasCondition( COND_CAN_MELEE_ATTACK1 ) && IsSprinting() == true )
 	{
-		m_flSuperFastAttackTime = gpGlobals->curtime + 1.0f;
+		m_flSuperFastAttackTime = gpGlobals->curtime + 0.5f;
 	}
 
 	BaseClass::OnScheduleChange();
@@ -668,7 +668,7 @@ void CNPC_Zombine::Sprint( bool bMadSprint )
 	OccupyStrategySlotRange( SQUAD_SLOT_ZOMBINE_SPRINT1, SQUAD_SLOT_ZOMBINE_SPRINT2 );
 	GetNavigator()->SetMovementActivity( ACT_RUN );
 
-	float flSprintTime = random->RandomFloat( MIN_SPRINT_TIME, MAX_SPRINT_TIME );
+	float flSprintTime = 9999;
 
 	//If holding a grenade then sprint until it blows up.
 	if ( HasGrenade() || bMadSprint == true )
@@ -679,7 +679,7 @@ void CNPC_Zombine::Sprint( bool bMadSprint )
 	m_flSprintTime = gpGlobals->curtime + flSprintTime;
 
 	//Don't sprint for this long after I'm done with this sprint run.
-	m_flSprintRestTime = m_flSprintTime + random->RandomFloat( 2.5f, 5.0f );
+	//m_flSprintRestTime = m_flSprintTime + random->RandomFloat( 2.5f, 5.0f );
 
 	EmitSound( "Zombine.Charge" );
 }
