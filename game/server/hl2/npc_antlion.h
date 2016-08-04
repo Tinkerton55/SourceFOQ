@@ -238,6 +238,7 @@ private:
 	float	m_flBurrowTime;
 	float	m_flJumpTime;
 	float	m_flAlertRadius;
+	float	m_flGroundSpeedDefault;
 
 	float	m_flPounceTime;
 	int		m_iUnBurrowAttempts;

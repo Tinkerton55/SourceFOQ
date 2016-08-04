@@ -340,7 +340,10 @@ void CNPC_Antlion::Spawn( void )
 	// Antlions will always pursue
 	m_flDistTooFar = FLT_MAX;
 
-	m_bDisableJump = false;
+	//m_bDisableJump = false;
+	m_bDisableJump = true;
+
+	m_flGroundSpeedDefault = m_flGroundSpeed;
 
 	//See if we're supposed to start burrowed
 	if ( m_bStartBurrowed )
@@ -1154,6 +1157,16 @@ void CNPC_Antlion::HandleAnimEvent( animevent_t *pEvent )
 
 	if ( pEvent->event == AE_ANTLION_WALK_FOOTSTEP )
 	{
+		CBasePlayer *pPlayer = static_cast<CBasePlayer*>(GetEnemy());
+
+		if (pPlayer)
+		{
+			// If the enemy is a player and looking away increase movement speed
+			if (!pPlayer->FInViewCone(this))
+			{
+				m_flGroundSpeed = 15 * m_flGroundSpeed;
+			}
+		}
 		MakeAIFootstepSound( 240.0f );
 		EmitSound( "NPC_Antlion.Footstep", m_hFootstep, pEvent->eventtime );
 		return;
@@ -2341,12 +2354,12 @@ int CNPC_Antlion::SelectSchedule( void )
 	}
 
 	// If we're scripted to jump at a target, do so
-	if ( HasCondition( COND_ANTLION_CAN_JUMP_AT_TARGET ) )
-	{
+//	if ( HasCondition( COND_ANTLION_CAN_JUMP_AT_TARGET ) )
+//	{
 		// NDebugOverlay::Cross3D( m_vecSavedJump, 32.0f, 255, 0, 0, true, 2.0f );
-		ClearCondition( COND_ANTLION_CAN_JUMP_AT_TARGET );
-		return SCHED_ANTLION_JUMP;
-	}
+//		ClearCondition( COND_ANTLION_CAN_JUMP_AT_TARGET );
+//		return SCHED_ANTLION_JUMP;
+//	}
 
 	//Hear bug bait splattered?
 	if ( HasCondition( COND_HEAR_BUGBAIT ) && ( m_bIgnoreBugbait == false ) )
@@ -2495,8 +2508,8 @@ int CNPC_Antlion::SelectSchedule( void )
 				}
 
 				// Try to jump
-				if ( HasCondition( COND_ANTLION_CAN_JUMP ) )
-					return SCHED_ANTLION_JUMP;
+//				if ( HasCondition( COND_ANTLION_CAN_JUMP ) )
+//					return SCHED_ANTLION_JUMP;
 			}
 		}
 		break;
@@ -4343,6 +4356,7 @@ void CNPC_Antlion::Flip( bool bZapped /*= false*/ )
 //-----------------------------------------------------------------------------
 void CNPC_Antlion::InputJumpAtTarget( inputdata_t &inputdata )
 {
+	return;
 	CBaseEntity *pJumpTarget = gEntList.FindEntityByName( NULL, inputdata.value.String(), this, inputdata.pActivator, inputdata.pCaller );
 	if ( pJumpTarget == NULL )
 	{
