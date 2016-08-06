@@ -1161,8 +1161,8 @@ void CNPC_Antlion::HandleAnimEvent( animevent_t *pEvent )
 
 		if (pPlayer)
 		{
-			// If the enemy is a player and looking away increase movement speed
-			if (!pPlayer->FInViewCone(this))
+			// If the enemy is a player and looking away or is behind a wall increase movement speed
+			if (!pPlayer->FInViewCone(this) || HasCondition(COND_ENEMY_OCCLUDED))
 			{
 				m_flGroundSpeed = 15 * m_flGroundSpeed;
 			}
@@ -3794,14 +3794,14 @@ void CNPC_Antlion::PrescheduleThink( void )
 	}
 
 	// See if we should jump because of desirables conditions, or a scripted request
-	if ( ShouldJump() )
-	{
-		SetCondition( COND_ANTLION_CAN_JUMP );
-	}
-	else
-	{
+	//if ( ShouldJump() )
+	//{
+	//	SetCondition( COND_ANTLION_CAN_JUMP );
+	//}
+	//else
+	//{
 		ClearCondition( COND_ANTLION_CAN_JUMP );
-	}
+	//}
 
 	BaseClass::PrescheduleThink();
 }
