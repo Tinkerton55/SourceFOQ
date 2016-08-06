@@ -2033,32 +2033,32 @@ bool CNPC_Antlion::IsFirmlyOnGround( void )
 //-----------------------------------------------------------------------------
 int CNPC_Antlion::SelectFailSchedule( int failedSchedule, int failedTask, AI_TaskFailureCode_t taskFailCode )
 {
-	if ( m_FollowBehavior.GetNumFailedFollowAttempts() >= 2 )
-	{
-		if( IsFirmlyOnGround() == false )
-		{
-			Vector vecJumpDir; 
-				
-			vecJumpDir.z = 0;
-			vecJumpDir.x = 0;
-			vecJumpDir.y = 0;
-			
-			while( vecJumpDir.x == 0 && vecJumpDir.y == 0 )
-			{
-				vecJumpDir.x = random->RandomInt( -1, 1 ); 
-				vecJumpDir.y = random->RandomInt( -1, 1 );
-			}
+	//if ( m_FollowBehavior.GetNumFailedFollowAttempts() >= 2 )
+	//{
+	//	if( IsFirmlyOnGround() == false )
+	//	{
+	//		Vector vecJumpDir; 
+	//			
+	//		vecJumpDir.z = 0;
+	//		vecJumpDir.x = 0;
+	//		vecJumpDir.y = 0;
+	//		
+	//		while( vecJumpDir.x == 0 && vecJumpDir.y == 0 )
+	//		{
+	//			vecJumpDir.x = random->RandomInt( -1, 1 ); 
+	//			vecJumpDir.y = random->RandomInt( -1, 1 );
+	//		}
 
-			vecJumpDir.NormalizeInPlace();
+	//		vecJumpDir.NormalizeInPlace();
 
-			SetGroundEntity( NULL );
-	
-			m_vecSavedJump = vecJumpDir * 512 + Vector( 0, 0, 256 );
-			m_bForcedStuckJump = true;
-	
-			return SCHED_ANTLION_JUMP;
-		}
-	}
+	//		SetGroundEntity( NULL );
+	//
+	//		m_vecSavedJump = vecJumpDir * 512 + Vector( 0, 0, 256 );
+	//		m_bForcedStuckJump = true;
+	//
+	//		return SCHED_ANTLION_JUMP;
+	//	}
+	//}
 
 	// Catch the LOF failure and choose another route to take
 	if ( failedSchedule == SCHED_ESTABLISH_LINE_OF_FIRE )
