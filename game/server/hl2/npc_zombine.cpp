@@ -303,7 +303,7 @@ void CNPC_Zombine::OnScheduleChange( void )
 {
 	if ( HasCondition( COND_CAN_MELEE_ATTACK1 ) && IsSprinting() == true )
 	{
-		m_flSuperFastAttackTime = gpGlobals->curtime + 0.5f;
+		m_flSuperFastAttackTime = gpGlobals->curtime + 0.1f;
 	}
 
 	BaseClass::OnScheduleChange();
@@ -411,29 +411,32 @@ void CNPC_Zombine::GatherGrenadeConditions( void )
 	if ( m_ActBusyBehavior.IsActive() )
 		return;
 
-	CBasePlayer *pPlayer = AI_GetSinglePlayer();
+	//CBasePlayer *pPlayer = AI_GetSinglePlayer();
 
-	if ( pPlayer && pPlayer->FVisible( this ) )
-	{
-		float flLengthToPlayer = (pPlayer->GetAbsOrigin() - GetAbsOrigin()).Length();
-		float flLengthToEnemy = flLengthToPlayer;
+	//if ( pPlayer && pPlayer->FVisible( this ) )
+	//{
+	//	float flLengthToPlayer = (pPlayer->GetAbsOrigin() - GetAbsOrigin()).Length();
+	//	float flLengthToEnemy = flLengthToPlayer;
 
-		if ( pPlayer != GetEnemy() )
-		{
-			flLengthToEnemy = ( GetEnemy()->GetAbsOrigin() - GetAbsOrigin()).Length();
-		}
+	//	if ( pPlayer != GetEnemy() )
+	//	{
+	//		flLengthToEnemy = ( GetEnemy()->GetAbsOrigin() - GetAbsOrigin()).Length();
+	//	}
 
-		if ( flLengthToPlayer <= GRENADE_PULL_MAX_DISTANCE && flLengthToEnemy <= GRENADE_PULL_MAX_DISTANCE )
-		{
-			float flPullChance = 1.0f - ( flLengthToEnemy / GRENADE_PULL_MAX_DISTANCE );
-			m_flGrenadePullTime = gpGlobals->curtime + 0.5f;
+	//	if ( flLengthToPlayer <= GRENADE_PULL_MAX_DISTANCE && flLengthToEnemy <= GRENADE_PULL_MAX_DISTANCE )
+	//	{
+	//		float flPullChance = 1.0f - ( flLengthToEnemy / GRENADE_PULL_MAX_DISTANCE );
+	//		m_flGrenadePullTime = gpGlobals->curtime + 0.5f;
 
-			if ( flPullChance >= random->RandomFloat( 0.0f, 1.0f ) )
-			{
-				g_flZombineGrenadeTimes = gpGlobals->curtime + 10.0f;
-				SetCondition( COND_ZOMBINE_GRENADE );
-			}
-		}
+	//		if ( flPullChance >= random->RandomFloat( 0.0f, 1.0f ) )
+	//		{
+	//			g_flZombineGrenadeTimes = gpGlobals->curtime + 10.0f;
+	//			SetCondition( COND_ZOMBINE_GRENADE );
+	//		}
+	//	}
+	//}
+	if (GetEnemy() != NULL && FVisible(GetEnemy()) == false && IsSprinting() == false) {
+		SetCondition(COND_ZOMBINE_GRENADE);
 	}
 }
 
@@ -644,10 +647,10 @@ bool CNPC_Zombine::AllowedToSprint( void )
 			return false;
 	}
 
-	float flLength = ( GetEnemy()->WorldSpaceCenter() - WorldSpaceCenter() ).Length();
+	//float flLength = ( GetEnemy()->WorldSpaceCenter() - WorldSpaceCenter() ).Length();
 
-	if ( flLength > MAX_SPRINT_DISTANCE )
-		return false;
+	//if ( flLength > MAX_SPRINT_DISTANCE )
+	//	return false;
 
 	return true;
 }
