@@ -1944,6 +1944,9 @@ bool CNPC_Antlion::AllowedToBePushed( void )
 //-----------------------------------------------------------------------------
 bool CNPC_Antlion::IsJumpLegal( const Vector &startPos, const Vector &apex, const Vector &endPos ) const
 {
+
+	return false;
+
 	const float MAX_JUMP_RISE		= 512;
 	const float MAX_JUMP_DROP		= 512;
 	const float MAX_JUMP_DISTANCE	= 1024;
