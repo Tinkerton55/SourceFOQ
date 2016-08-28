@@ -39,7 +39,7 @@
 
 #define SF_COMBINE_BALL_BOUNCING_IN_SPAWNER		0x10000
 
-#define	MAX_COMBINEBALL_RADIUS	12
+#define	MAX_COMBINEBALL_RADIUS	8
 
 ConVar	sk_npc_dmg_combineball( "sk_npc_dmg_combineball","15", FCVAR_REPLICATED);
 ConVar	sk_combineball_guidefactor( "sk_combineball_guidefactor","0.5", FCVAR_REPLICATED);
@@ -338,7 +338,7 @@ bool CPropCombineBall::CreateVPhysics()
 	SetMoveType( MOVETYPE_VPHYSICS );
 	pPhysicsObject->Wake();
 
-	pPhysicsObject->SetMass( 750.0f );
+	pPhysicsObject->SetMass( 20.0f );
 	pPhysicsObject->EnableGravity( false );
 	pPhysicsObject->EnableDrag( false );
 
@@ -533,7 +533,7 @@ void CPropCombineBall::SetMass( float mass )
 	if ( pObj != NULL )
 	{
 		pObj->SetMass( mass );
-		pObj->SetInertia( Vector( 500, 500, 500 ) );
+		pObj->SetInertia( Vector( 100, 100, 100 ) );
 	}
 }
 
@@ -760,7 +760,7 @@ void CPropCombineBall::SetBallAsLaunched( void )
 	m_bLaunched = true;
 	SetState( STATE_THROWN );
 
-	VPhysicsGetObject()->SetMass( 750.0f );
+	VPhysicsGetObject()->SetMass( 20.0f );
 	VPhysicsGetObject()->SetInertia( Vector( 1e30, 1e30, 1e30 ) );
 
 	StopLoopingSounds();
@@ -1031,7 +1031,7 @@ void CPropCombineBall::DoExplosion( )
 			EmitSound( "NPC_CombineBall.Explosion" );
 		}
 
-		UTIL_ScreenShake( GetAbsOrigin(), 20.0f, 150.0, 1.0, 1250.0f, SHAKE_START );
+		UTIL_ScreenShake( GetAbsOrigin(), 10.0f, 75.0, 0.5, 256.0f, SHAKE_START );
 
 		CEffectData data;
 
@@ -1124,7 +1124,7 @@ void CPropCombineBall::DoExplosion( )
 		}
 	}
 
-	SetContextThink( &CPropCombineBall::SUB_Remove, gpGlobals->curtime + 0.5f, s_pRemoveContext );
+	SetContextThink( &CPropCombineBall::SUB_Remove, gpGlobals->curtime + 0.1f, s_pRemoveContext );
 	StopLoopingSounds();
 }
 
@@ -1288,6 +1288,8 @@ void CPropCombineBall::OnHitEntity( CBaseEntity *pHitEntity, float flSpeed, int 
 		vecFinalVelocity *= GetSpeed();
 	}
 	PhysCallbackSetVelocity( pEvent->pObjects[index], vecFinalVelocity ); 
+	DoExplosion();
+	return;
 }
 
 
@@ -1658,7 +1660,7 @@ void CPropCombineBall::VPhysicsCollision( int index, gamevcollisionevent_t *pEve
 
 	if ( OutOfBounces() && m_bBounceDie == false )
 	{
-		StartLifetime( 0.5 );
+		StartLifetime( 0.1 );
 		//Hack: Stop this from being called by doing this.
 		m_bBounceDie = true;
 	}

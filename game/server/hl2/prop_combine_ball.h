@@ -158,6 +158,7 @@ private:
 
 	bool OutOfBounces( void ) const
 	{
+		return true;
 		return ( m_nState == STATE_LAUNCHED && m_nMaxBounces != 0 && m_nBounceCount >= m_nMaxBounces );
 	}
 

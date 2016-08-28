@@ -481,6 +481,8 @@ void CNPC_Citizen::Spawn()
 	m_bShouldPatrol = false;
 	m_iHealth = sk_citizen_health.GetFloat();
 	
+	CapabilitiesRemove(bits_CAP_MOVE_SHOOT);
+
 	// Are we on a train? Used in trainstation to have NPCs on trains.
 	if ( GetMoveParent() && FClassnameIs( GetMoveParent(), "func_tracktrain" ) )
 	{
@@ -516,6 +518,7 @@ void CNPC_Citizen::Spawn()
 	}
 
 	m_flTimePlayerStare = FLT_MAX;
+	m_flNextAttack = gpGlobals->curtime + 4.0f;
 
 	AddEFlags( EFL_NO_DISSOLVE | EFL_NO_MEGAPHYSCANNON_RAGDOLL | EFL_NO_PHYSCANNON_INTERACTION );
 
@@ -1165,6 +1168,17 @@ int CNPC_Citizen::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 //-----------------------------------------------------------------------------
 int CNPC_Citizen::SelectSchedule()
 {
+	if (!GetEnemy()) {
+		return SCHED_IDLE_STAND;
+	}
+	if (gpGlobals->curtime < m_flNextAttack) {
+		return SCHED_GRUNT_CHASE;
+	}
+	else {
+		m_flNextAttack = gpGlobals->curtime + 4.0f;
+		return SCHED_GRUNT_ATTACK;
+	}
+
 	// If we can't move, we're on a train, and should be sitting.
 	if ( GetMoveType() == MOVETYPE_NONE )
 	{
@@ -1548,6 +1562,9 @@ void CNPC_Citizen::StartTask( const Task_t *pTask )
 {
 	switch( pTask->iTask )
 	{
+	case TASK_SELECT_SCHEDULE:
+		SelectSchedule();
+		break;
 	case TASK_CIT_PLAY_INSPECT_SEQUENCE:
 		SetIdealActivity( (Activity) m_nInspectActivity );
 		break;
@@ -3876,6 +3893,7 @@ AI_BEGIN_CUSTOM_NPC( npc_citizen, CNPC_Citizen )
 	DECLARE_TASK( TASK_CIT_SIT_ON_TRAIN )
 	DECLARE_TASK( TASK_CIT_LEAVE_TRAIN )
 	DECLARE_TASK( TASK_CIT_SPEAK_MOURNING )
+	DECLARE_TASK ( TASK_SELECT_SCHEDULE )
 #if HL2_EPISODIC
 	DECLARE_TASK( TASK_CIT_HEAL_TOSS )
 #endif
@@ -3897,6 +3915,31 @@ AI_BEGIN_CUSTOM_NPC( npc_citizen, CNPC_Citizen )
 	//=========================================================
 	// > SCHED_SCI_HEAL
 	//=========================================================
+	DEFINE_SCHEDULE
+		(
+		SCHED_GRUNT_CHASE,
+
+		"	Tasks"
+		"		TASK_STOP_MOVING				0"
+		"		TASK_GET_FLANK_RADIUS_PATH_TO_ENEMY_LOS 0"
+		"		TASK_RUN_PATH					0"
+		"		TASK_WAIT_FOR_MOVEMENT			0"
+		"		TASK_SET_SCHEDULE				SCHEDULE:SCHED_GRUNT_ATTACK"
+		"	"
+		"	Interrupts"
+		)
+	DEFINE_SCHEDULE
+		(
+		SCHED_GRUNT_ATTACK,
+
+		"	Tasks"
+		"		TASK_STOP_MOVING				0"
+		"		TASK_FACE_ENEMY					0"
+		"		TASK_PLAY_SEQUENCE				ACTIVITY:ACT_RANGE_ATTACK1"
+		"		TASK_SELECT_SCHEDULE			0"
+		"	"
+		"	Interrupts"
+		)
 	DEFINE_SCHEDULE
 	(
 		SCHED_CITIZEN_HEAL,

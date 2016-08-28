@@ -33,7 +33,7 @@
 
 ConVar sk_weapon_ar2_alt_fire_radius( "sk_weapon_ar2_alt_fire_radius", "10" );
 ConVar sk_weapon_ar2_alt_fire_duration( "sk_weapon_ar2_alt_fire_duration", "2" );
-ConVar sk_weapon_ar2_alt_fire_mass( "sk_weapon_ar2_alt_fire_mass", "150" );
+ConVar sk_weapon_ar2_alt_fire_mass( "sk_weapon_ar2_alt_fire_mass", "20" );
 
 //=========================================================
 //=========================================================
@@ -425,17 +425,17 @@ void CWeaponAR2::FireNPCSecondaryAttack( CBaseCombatCharacter *pOperator, bool b
 //-----------------------------------------------------------------------------
 void CWeaponAR2::Operator_ForceNPCFire( CBaseCombatCharacter *pOperator, bool bSecondary )
 {
-	if ( bSecondary )
-	{
+	//if ( bSecondary )
+	//{
 		FireNPCSecondaryAttack( pOperator, true );
-	}
-	else
-	{
-		// Ensure we have enough rounds in the clip
-		m_iClip1++;
+	//}
+	//else
+	//{
+	//	// Ensure we have enough rounds in the clip
+	//	m_iClip1++;
 
-		FireNPCPrimaryAttack( pOperator, true );
-	}
+	//	FireNPCPrimaryAttack( pOperator, true );
+	//}
 }
 
 //-----------------------------------------------------------------------------
@@ -448,10 +448,10 @@ void CWeaponAR2::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChara
 	switch( pEvent->event )
 	{ 
 		case EVENT_WEAPON_AR2:
-			{
-				FireNPCPrimaryAttack( pOperator, false );
-			}
-			break;
+			//{
+			//	FireNPCPrimaryAttack( pOperator, false );
+			//}
+			//break;
 
 		case EVENT_WEAPON_AR2_ALTFIRE:
 			{
