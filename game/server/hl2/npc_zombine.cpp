@@ -257,7 +257,7 @@ void CNPC_Zombine::SetZombieModel( void )
 	SetModel( "models/zombie/zombie_soldier.mdl" );
 	SetHullType( HULL_HUMAN );
 
-	SetBodygroup( ZOMBIE_BODYGROUP_HEADCRAB, !m_fIsHeadless );
+	//SetBodygroup( ZOMBIE_BODYGROUP_HEADCRAB, !m_fIsHeadless );
 
 	SetHullSizeNormal( true );
 	SetDefaultEyeOffset();

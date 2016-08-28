@@ -456,11 +456,11 @@ int CFastZombie::SelectSchedule ( void )
 #endif //HL2_EPISODIC
 // ========================================================
 
-	if ( HasCondition( COND_ZOMBIE_RELEASECRAB ) )
-	{
+	//if ( HasCondition( COND_ZOMBIE_RELEASECRAB ) )
+	//{
 		// Death waits for no man. Or zombie. Or something.
-		return BaseClass::SelectSchedule();
-	}
+		//return BaseClass::SelectSchedule();
+	//}
 
 	if ( HasCondition( COND_FASTZOMBIE_CLIMB_TOUCH ) )
 	{
