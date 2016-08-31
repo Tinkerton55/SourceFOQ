@@ -1168,6 +1168,14 @@ int CNPC_Citizen::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 //-----------------------------------------------------------------------------
 int CNPC_Citizen::SelectSchedule()
 {
+	if (HasCondition(COND_NEW_ENEMY)) {
+		//Tinkerton: Alert the player to our presence
+		SentenceStop();
+		EmitSound("NPC_Citizen.Die");
+		//Tinkerton: Should run around before attacking first
+		m_flNextAttack = gpGlobals->curtime + 1;
+		return SCHED_GRUNT_CHASE;
+	}
 	if (!GetEnemy()) {
 		return SCHED_IDLE_STAND;
 	}
