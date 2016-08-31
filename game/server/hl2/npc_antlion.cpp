@@ -2285,6 +2285,11 @@ void CNPC_Antlion::ZapThink( void )
 //-----------------------------------------------------------------------------
 int CNPC_Antlion::SelectSchedule( void )
 {
+	if (HasCondition(COND_NEW_ENEMY)) {
+		//Tinkerton: Alert sound when acquiring a new enemy
+		EmitSound("NPC_Antlion.Pain");
+	}
+
 	// Workers explode when killed unless told otherwise by anim events etc.
 	m_bDontExplode = false;
 
