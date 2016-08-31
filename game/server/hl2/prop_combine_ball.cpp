@@ -1660,7 +1660,7 @@ void CPropCombineBall::VPhysicsCollision( int index, gamevcollisionevent_t *pEve
 
 	if ( OutOfBounces() && m_bBounceDie == false )
 	{
-		StartLifetime( 0.1 );
+		StartLifetime( 0.0f );
 		//Hack: Stop this from being called by doing this.
 		m_bBounceDie = true;
 	}
