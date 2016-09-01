@@ -868,7 +868,7 @@ void CNPC_Combine::StartTask( const Task_t *pTask )
 
 			m_hForcedGrenadeTarget = GetEnemy();
 
-			float flMaxRange = 1024;
+			float flMaxRange = 2048;
 			float flMinRange = 64;
 
 			Vector vecEnemy = m_hForcedGrenadeTarget->GetAbsOrigin();
@@ -1745,7 +1745,7 @@ int CNPC_Combine::SelectSchedule( void )
 		float flDist;
 		flDist = (vecEnemy - GetAbsOrigin()).Length();
 
-		if (flDist > 1024) {
+		if (flDist > 2048) {
 			return SCHED_COMBINE_CHARGE_PLAYER;
 		}
 
@@ -1946,6 +1946,20 @@ int CNPC_Combine::SelectScheduleAttack()
 		return SCHED_MELEE_ATTACK1;
 	}
 
+	// Throw a grenade if not allowed to engage with weapon.
+	if (GetEnemy())
+	{
+		if (CanGrenadeEnemy()) {
+			if (OccupyStrategySlot(SQUAD_SLOT_GRENADE1))
+			{
+				return SCHED_RANGE_ATTACK2;
+			}
+		}
+		else {
+			return SCHED_COMBINE_MOVE_TO_FORCED_GREN_LOS;
+		}
+	}
+
 	// If I'm fighting a combine turret (it's been hacked to attack me), I can't really
 	// hurt it with bullets, so become grenade happy.
 	if ( GetEnemy() && GetEnemy()->Classify() == CLASS_COMBINE && FClassnameIs(GetEnemy(), "npc_turret_floor") )
@@ -2017,15 +2031,6 @@ int CNPC_Combine::SelectScheduleAttack()
 		if ( OccupyStrategySlotRange( SQUAD_SLOT_ATTACK1, SQUAD_SLOT_ATTACK2 ) )
 		{
 			return SCHED_RANGE_ATTACK1;
-		}
-
-		// Throw a grenade if not allowed to engage with weapon.
-		if ( CanGrenadeEnemy() )
-		{
-			if ( OccupyStrategySlot( SQUAD_SLOT_GRENADE1 ) )
-			{
-				return SCHED_RANGE_ATTACK2;
-			}
 		}
 
 		DesireCrouch();
@@ -2808,7 +2813,7 @@ bool CNPC_Combine::CanThrowGrenade( const Vector &vecTarget )
 	float flDist;
 	flDist = ( vecTarget - GetAbsOrigin() ).Length();
 
-	if( flDist > 1024 || flDist < 64 )
+	if( flDist > 2048 || flDist < 64 )
 	{
 		// Too close or too far!
 		m_flNextGrenadeCheck = gpGlobals->curtime + 1; // one full second.
@@ -2876,13 +2881,13 @@ bool CNPC_Combine::CheckCanThrowGrenade( const Vector &vecTarget )
 	{
 		// Have to try a high toss. Do I have enough room?
 		trace_t tr;
-		AI_TraceLine( EyePosition(), EyePosition() + Vector( 0, 0, 64 ), MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
-		if( tr.fraction != 1.0 )
-		{
+		Vector vecStartTrace = EyePosition();
+		AI_TraceLine(vecStartTrace, vecStartTrace + Vector(0, 0, 32), MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+		if (tr.fraction != 1.0) {
 			return false;
 		}
 
-		vecToss = VecCheckToss( this, EyePosition(), vecTarget, -1, 1.0, true, &vecMins, &vecMaxs );
+		vecToss = VecCheckToss(this, vecStartTrace, vecTarget, -1, 1.0, true, &vecMins, &vecMaxs);
 	}
 
 	if ( vecToss != vec3_origin )
@@ -3775,7 +3780,7 @@ DEFINE_SCHEDULE
  "		TASK_COMBINE_FACE_TOSS_DIR						0"
  "		TASK_ANNOUNCE_ATTACK				2"	// 2 = grenade
  "		TASK_PLAY_SEQUENCE					ACTIVITY:ACT_RANGE_ATTACK2"
- "		TASK_COMBINE_IGNORE_ATTACKS		6"
+ "		TASK_COMBINE_IGNORE_ATTACKS		2"
  "		TASK_SET_SCHEDULE					SCHEDULE:SCHED_COMBINE_TAKE_COVER1"	// don't run immediately after throwing grenade.
  ""
  "	Interrupts"
