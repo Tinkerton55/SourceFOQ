@@ -47,7 +47,7 @@ enum
 #define MIN_SPRINT_TIME 3.5f
 #define MAX_SPRINT_TIME 5.5f
 
-#define MIN_SPRINT_DISTANCE 64.0f
+#define MIN_SPRINT_DISTANCE 1.0f
 #define MAX_SPRINT_DISTANCE 1024.0f
 
 #define SPRINT_CHANCE_VALUE 10
@@ -132,7 +132,7 @@ public:
 	void DropGrenade( Vector vDir );
 
 	bool IsSprinting( void ) { return m_flSprintTime > gpGlobals->curtime;	}
-	bool HasGrenade( void ) { return m_hGrenade != NULL; }
+	bool HasGrenade( void ) { return false; }
 
 	int TranslateSchedule( int scheduleType );
 
@@ -141,6 +141,7 @@ public:
 
 	virtual CBaseEntity *OnFailedPhysGunPickup ( Vector vPhysgunPos );
 
+	void Flinch(Vector vPhysgunPos);
 	//Called when we want to let go of a grenade and let the physcannon pick it up.
 	void ReleaseGrenade( Vector vPhysgunPos );
 
@@ -168,6 +169,7 @@ private:
 	float   m_flGrenadePullTime;
 	
 	int		m_iGrenadeCount;
+	bool	m_bDidFlinch;
 
 	EHANDLE	m_hGrenade;
 
@@ -185,6 +187,7 @@ BEGIN_DATADESC( CNPC_Zombine )
 	DEFINE_FIELD( m_hGrenade, FIELD_EHANDLE ),
 	DEFINE_FIELD( m_flGrenadePullTime, FIELD_TIME ),
 	DEFINE_FIELD( m_iGrenadeCount, FIELD_INTEGER ),
+	DEFINE_FIELD(m_bDidFlinch, FIELD_BOOLEAN),
 	DEFINE_INPUTFUNC( FIELD_VOID,	"StartSprint", InputStartSprint ),
 	DEFINE_INPUTFUNC( FIELD_VOID,	"PullGrenade", InputPullGrenade ),
 END_DATADESC()
@@ -212,7 +215,7 @@ void CNPC_Zombine::Spawn( void )
 	m_iHealth			= sk_zombie_soldier_health.GetFloat();
 	SetMaxHealth( m_iHealth );
 
-	m_flFieldOfView		= 0.2;
+	m_flFieldOfView		= 0.4;
 
 	CapabilitiesClear();
 
@@ -222,11 +225,11 @@ void CNPC_Zombine::Spawn( void )
 	m_flSprintRestTime = 0.0f;
 
 	m_flNextMoanSound = gpGlobals->curtime + random->RandomFloat( 1.0, 4.0 );
-
 	g_flZombineGrenadeTimes = gpGlobals->curtime;
 	m_flGrenadePullTime = gpGlobals->curtime;
 
 	m_iGrenadeCount = ZOMBINE_MAX_GRENADES;
+	m_bDidFlinch = false;
 }
 
 void CNPC_Zombine::Precache( void )
@@ -266,7 +269,8 @@ void CNPC_Zombine::SetZombieModel( void )
 
 void CNPC_Zombine::PrescheduleThink( void )
 {
-	GatherGrenadeConditions();
+	m_flNextFlinchTime = gpGlobals->curtime + 999;
+	//GatherGrenadeConditions();
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
 	{
@@ -295,7 +299,11 @@ void CNPC_Zombine::PrescheduleThink( void )
 			}
 		}
 	}
-
+	//if (m_bDidFlinch == false){
+	//	m_bDidFlinch = true;
+	//	Vector zombie_pos = GetAbsOrigin();
+	//	Flinch(zombie_pos);
+	//}
 	BaseClass::PrescheduleThink();
 }
 
@@ -303,7 +311,7 @@ void CNPC_Zombine::OnScheduleChange( void )
 {
 	if ( HasCondition( COND_CAN_MELEE_ATTACK1 ) && IsSprinting() == true )
 	{
-		m_flSuperFastAttackTime = gpGlobals->curtime + 0.1f;
+		m_flSuperFastAttackTime = gpGlobals->curtime;
 	}
 
 	BaseClass::OnScheduleChange();
@@ -321,12 +329,12 @@ int CNPC_Zombine::SelectSchedule( void )
 	if ( GetHealth() <= 0 )
 		return BaseClass::SelectSchedule();
 
-	if ( HasCondition( COND_ZOMBINE_GRENADE ) )
-	{
-		ClearCondition( COND_ZOMBINE_GRENADE );
+	//if ( HasCondition( COND_ZOMBINE_GRENADE ) )
+	//{
+		//ClearCondition( COND_ZOMBINE_GRENADE );
 		
-		return SCHED_ZOMBINE_PULL_GRENADE;
-	}
+		//return SCHED_ZOMBINE_PULL_GRENADE;
+	//}
 
 	return BaseClass::SelectSchedule();
 }
@@ -342,19 +350,19 @@ Activity CNPC_Zombine::NPC_TranslateActivity( Activity baseAct )
 {
 	if ( baseAct == ACT_MELEE_ATTACK1 )
 	{
-		if ( m_flSuperFastAttackTime > gpGlobals->curtime || HasGrenade() )
+		if ( m_flSuperFastAttackTime > gpGlobals->curtime )
 		{
 			return (Activity)ACT_ZOMBINE_ATTACK_FAST;
 		}
 	}
 
-	if ( baseAct == ACT_IDLE )
-	{
-		if ( HasGrenade() )
-		{
-			return (Activity)ACT_ZOMBINE_GRENADE_IDLE;
-		}
-	}
+	//if ( baseAct == ACT_IDLE )
+	//{
+	//	if ( HasGrenade() )
+	//	{
+	//		return (Activity)ACT_ZOMBINE_GRENADE_IDLE;
+	//	}
+	//}
 
 	return BaseClass::NPC_TranslateActivity( baseAct );
 }
@@ -363,21 +371,22 @@ int CNPC_Zombine::MeleeAttack1Conditions ( float flDot, float flDist )
 {
 	int iBase = BaseClass::MeleeAttack1Conditions( flDot, flDist );
 
-	if( HasGrenade() )
-	{
+	//if( HasGrenade() )
+	//{
 		//Adrian: stop spriting if we get close enough to melee and we have a grenade
 		//this gives NPCs time to move away from you (before it was almost impossible cause of the high sprint speed)
 		if ( iBase == COND_CAN_MELEE_ATTACK1 )
 		{
 			StopSprint();
 		}
-	}
+	//}
 
 	return iBase;
 }
 
 void CNPC_Zombine::GatherGrenadeConditions( void )
 {
+	return;
 	if ( m_iGrenadeCount <= 0 )
 		return;
 
@@ -435,9 +444,9 @@ void CNPC_Zombine::GatherGrenadeConditions( void )
 	//		}
 	//	}
 	//}
-	if (GetEnemy() != NULL && FVisible(GetEnemy()) == false && IsSprinting() == false) {
-		SetCondition(COND_ZOMBINE_GRENADE);
-	}
+	//if (GetEnemy() != NULL && FVisible(GetEnemy()) == false && IsSprinting() == false) {
+		//SetCondition(COND_ZOMBINE_GRENADE);
+	//}
 }
 
 int CNPC_Zombine::TranslateSchedule( int scheduleType ) 
@@ -484,10 +493,10 @@ void CNPC_Zombine::Event_Killed( const CTakeDamageInfo &info )
 {
 	BaseClass::Event_Killed( info );
 
-	if ( HasGrenade() )
-	{
-		DropGrenade( vec3_origin );
-	}
+	//if ( HasGrenade() )
+	//{
+		//DropGrenade( vec3_origin );
+	//}
 }
 
 //-----------------------------------------------------------------------------
@@ -516,20 +525,20 @@ void CNPC_Zombine::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDi
 	BaseClass::TraceAttack( info, vecDir, ptr, pAccumulator );
 
 	//Only knock grenades off their hands if it's a player doing the damage.
-	if ( info.GetAttacker() && info.GetAttacker()->IsNPC() )
-		return;
+	//if ( info.GetAttacker() && info.GetAttacker()->IsNPC() )
+	//	return;
 
-	if ( info.GetDamageType() & ( DMG_BULLET | DMG_CLUB ) )
-	{
-		if ( ptr->hitgroup == HITGROUP_LEFTARM )
-		{
-			if ( HasGrenade() )
-			{
-				DropGrenade( info.GetDamageForce() );
-				StopSprint();
-			}
-		}
-	}
+	//if ( info.GetDamageType() & ( DMG_BULLET | DMG_CLUB ) )
+	//{
+	//	if ( ptr->hitgroup == HITGROUP_LEFTARM )
+	//	{
+	//		if ( HasGrenade() )
+	//		{
+	//			DropGrenade( info.GetDamageForce() );
+	//			StopSprint();
+	//		}
+	//	}
+	//}
 }
 
 void CNPC_Zombine::HandleAnimEvent( animevent_t *pEvent )
@@ -604,13 +613,13 @@ void CNPC_Zombine::HandleAnimEvent( animevent_t *pEvent )
 
 bool CNPC_Zombine::AllowedToSprint( void )
 {
+	//If you're sprinting then there's no reason to sprint again.
+	if (IsSprinting())
+		return false;
+	return true;
 	if ( IsOnFire() )
 		return false;
 	
-	//If you're sprinting then there's no reason to sprint again.
-	if ( IsSprinting() )
-		return false;
-
 	int iChance = SPRINT_CHANCE_VALUE;
 
 	CHL2_Player *pPlayer = dynamic_cast <CHL2_Player*> ( AI_GetSinglePlayer() );
@@ -668,7 +677,7 @@ void CNPC_Zombine::Sprint( bool bMadSprint )
 	if ( IsSprinting() )
 		return;
 
-	OccupyStrategySlotRange( SQUAD_SLOT_ZOMBINE_SPRINT1, SQUAD_SLOT_ZOMBINE_SPRINT2 );
+	//OccupyStrategySlotRange( SQUAD_SLOT_ZOMBINE_SPRINT1, SQUAD_SLOT_ZOMBINE_SPRINT2 );
 	GetNavigator()->SetMovementActivity( ACT_RUN );
 
 	float flSprintTime = 9999;
@@ -696,19 +705,15 @@ void CNPC_Zombine::RunTask( const Task_t *pTask )
 		{
 			BaseClass::RunTask( pTask );
 
-			if ( IsOnFire() && IsSprinting() )
-			{
-				StopSprint();
-			}
-
 			//Only do this if I have an enemy
 			if ( GetEnemy() )
 			{
-				if ( AllowedToSprint() == true )
-				{
-					Sprint( ( GetHealth() <= GetMaxHealth() * 0.5f ) );
+				//if ( AllowedToSprint() == true )
+				//{
+					//Sprint( ( GetHealth() <= GetMaxHealth() * 0.5f ) );
+					Sprint(true);
 					return;
-				}
+				//}
 
 				if ( HasGrenade() )
 				{
@@ -734,7 +739,7 @@ void CNPC_Zombine::RunTask( const Task_t *pTask )
 			}
 			else
 			{
-				GetNavigator()->SetMovementActivity( ACT_WALK );
+				GetNavigator()->SetMovementActivity( ACT_IDLE ); //ACT_WALK
 			}
 		
 			break;
@@ -755,7 +760,7 @@ void CNPC_Zombine::InputStartSprint ( inputdata_t &inputdata )
 void CNPC_Zombine::InputPullGrenade ( inputdata_t &inputdata )
 {
 	g_flZombineGrenadeTimes = gpGlobals->curtime + 5.0f;
-	SetCondition( COND_ZOMBINE_GRENADE );
+	//SetCondition( COND_ZOMBINE_GRENADE );
 }
 
 //-----------------------------------------------------------------------------
@@ -921,6 +926,63 @@ void CNPC_Zombine::MoanSound( envelopePoint_t *pEnvelope, int iEnvelopeSize )
 const char *CNPC_Zombine::GetHeadcrabClassname( void )
 {
 	return "npc_headcrab";
+}
+
+void CNPC_Zombine::Flinch(Vector vPhysgunPos) 
+{
+
+	Vector vDir = vPhysgunPos - this->GetAbsOrigin();
+	VectorNormalize(vDir);
+
+	Activity aActivity;
+
+	Vector vForward, vRight;
+	GetVectors(&vForward, &vRight, NULL);
+
+	float flDotForward = DotProduct(vForward, vDir);
+	float flDotRight = DotProduct(vRight, vDir);
+
+	bool bNegativeForward = false;
+	bool bNegativeRight = false;
+
+	if (flDotForward < 0.0f)
+	{
+		bNegativeForward = true;
+		flDotForward = flDotForward * -1;
+	}
+
+	if (flDotRight < 0.0f)
+	{
+		bNegativeRight = true;
+		flDotRight = flDotRight * -1;
+	}
+
+	if (flDotRight > flDotForward)
+	{
+		if (bNegativeRight == true)
+			aActivity = (Activity)ACT_ZOMBINE_GRENADE_FLINCH_WEST;
+		else
+			aActivity = (Activity)ACT_ZOMBINE_GRENADE_FLINCH_EAST;
+	}
+	else
+	{
+		if (bNegativeForward == true)
+			aActivity = (Activity)ACT_ZOMBINE_GRENADE_FLINCH_BACK;
+		else
+			aActivity = (Activity)ACT_ZOMBINE_GRENADE_FLINCH_FRONT;
+	}
+
+	AddGesture(aActivity);
+
+	if (IsSprinting())
+	{
+		StopSprint();
+	}
+	else
+	{
+		Sprint();
+	}
+
 }
 
 void CNPC_Zombine::ReleaseGrenade( Vector vPhysgunPos )

@@ -38,6 +38,8 @@
 #define BOLT_AIR_VELOCITY	2500
 #define BOLT_WATER_VELOCITY	1500
 
+#define CROSSBOW_AMMO_CLIP	40
+
 extern ConVar sk_plr_dmg_crossbow;
 extern ConVar sk_npc_dmg_crossbow;
 
@@ -542,9 +544,14 @@ void CWeaponCrossbow::PrimaryAttack( void )
 	}
 
 	// Signal a reload
-	m_bMustReload = true;
-
-	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) );
+	if (m_iClip1 <= 0) {
+		m_bMustReload = true;
+	}
+	else {
+		m_bMustReload = false;
+	}
+	//SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) );
+	SetWeaponIdleTime(gpGlobals->curtime + 0.1f);
 
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 	if ( pPlayer )
@@ -570,6 +577,8 @@ bool CWeaponCrossbow::Reload( void )
 {
 	if ( BaseClass::Reload() )
 	{
+		m_iClip1 = CROSSBOW_AMMO_CLIP;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = gpGlobals->curtime + 2.0f;
 		m_bMustReload = false;
 		return true;
 	}
@@ -622,15 +631,16 @@ void CWeaponCrossbow::FireBolt( void )
 {
 	if ( m_iClip1 <= 0 )
 	{
-		if ( !m_bFireOnEmpty )
-		{
+		//if ( !m_bFireOnEmpty )
+		//{
 			Reload();
-		}
-		else
-		{
+		//}
+		//else
+		//{
 			WeaponSound( EMPTY );
-			m_flNextPrimaryAttack = 0.15;
-		}
+			//m_flNextPrimaryAttack = 0.15;
+			m_flNextPrimaryAttack = 4.0;
+		//}
 
 		return;
 	}
@@ -693,7 +703,7 @@ void CWeaponCrossbow::FireBolt( void )
 		pOwner->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
 
-	m_flNextPrimaryAttack = m_flNextSecondaryAttack	= gpGlobals->curtime + 0.75;
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack	= gpGlobals->curtime + 0.1;
 
 	DoLoadEffect();
 	SetChargerState( CHARGER_STATE_DISCHARGE );
