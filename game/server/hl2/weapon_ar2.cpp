@@ -357,7 +357,7 @@ void CWeaponAR2::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, bool bUs
 //-----------------------------------------------------------------------------
 void CWeaponAR2::FireNPCSecondaryAttack( CBaseCombatCharacter *pOperator, bool bUseWeaponAngles )
 {
-	WeaponSound( WPN_DOUBLE );
+	//WeaponSound( WPN_DOUBLE );
 
 	if ( !GetOwner() )
 		return;
