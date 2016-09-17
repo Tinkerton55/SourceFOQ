@@ -13,6 +13,7 @@
 #include "game.h"
 #include "in_buttons.h"
 #include "grenade_ar2.h"
+#include "grenade_frag.h"
 #include "ai_memory.h"
 #include "soundent.h"
 #include "rumble_shared.h"
@@ -334,7 +335,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 	{
 		SendWeaponAnim( ACT_VM_DRYFIRE );
 		BaseClass::WeaponSound( EMPTY );
-		m_flNextSecondaryAttack = gpGlobals->curtime + 0.5f;
+		m_flNextSecondaryAttack = gpGlobals->curtime + 0.25f;
 		return;
 	}
 
@@ -355,11 +356,20 @@ void CWeaponSMG1::SecondaryAttack( void )
 	//Create the grenade
 	QAngle angles;
 	VectorAngles( vecThrow, angles );
-	CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecSrc, angles, pPlayer );
+	Vector vecSpin;
+	vecSpin.x = random->RandomFloat(-1000.0, 1000.0);
+	vecSpin.y = random->RandomFloat(-1000.0, 1000.0);
+	vecSpin.z = random->RandomFloat(-1000.0, 1000.0);
+	Vector forward;
+
+	GetVectors(&forward, NULL, NULL);
+	//CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecSrc, angles, pPlayer );
+	
+	CBaseGrenade *pGrenade = Fraggrenade_Create(vecSrc + forward * 16.0, angles, vecThrow, vecSpin, this, 3.5, false);
 	pGrenade->SetAbsVelocity( vecThrow );
 
 	pGrenade->SetLocalAngularVelocity( RandomAngle( -400, 400 ) );
-	pGrenade->SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE ); 
+	pGrenade->SetMoveType( MOVETYPE_VPHYSICS, MOVECOLLIDE_FLY_BOUNCE);
 	pGrenade->SetThrower( GetOwner() );
 	pGrenade->SetDamage( sk_plr_dmg_smg1_grenade.GetFloat() );
 
@@ -377,7 +387,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.5f;
 
 	// Can blow up after a short delay (so have time to release mouse button)
-	m_flNextSecondaryAttack = gpGlobals->curtime + 1.0f;
+	m_flNextSecondaryAttack = gpGlobals->curtime + 0.5f;
 
 	// Register a muzzleflash for the AI.
 	pPlayer->SetMuzzleFlashTime( gpGlobals->curtime + 0.5 );	
