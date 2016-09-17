@@ -338,7 +338,7 @@ bool CPropCombineBall::CreateVPhysics()
 	SetMoveType( MOVETYPE_VPHYSICS );
 	pPhysicsObject->Wake();
 
-	pPhysicsObject->SetMass( 20.0f );
+	pPhysicsObject->SetMass( 30.0f );
 	pPhysicsObject->EnableGravity( false );
 	pPhysicsObject->EnableDrag( false );
 
