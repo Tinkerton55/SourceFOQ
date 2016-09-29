@@ -1991,7 +1991,8 @@ void CGameMovement::WalkMove( void )
 		// Now pull the base velocity back out.   Base velocity is set if you are on a moving object, like a conveyor (or maybe another monster?)
 		VectorSubtract( mv->m_vecVelocity, player->GetBaseVelocity(), mv->m_vecVelocity );
 
-		StayOnGround();
+		//Tinkerton: StayOnGround is implemented in CategorizePosition - ripped from TF
+		//StayOnGround();
 		return;
 	}
 
@@ -2016,7 +2017,8 @@ void CGameMovement::WalkMove( void )
 	// Now pull the base velocity back out.   Base velocity is set if you are on a moving object, like a conveyor (or maybe another monster?)
 	VectorSubtract( mv->m_vecVelocity, player->GetBaseVelocity(), mv->m_vecVelocity );
 
-	StayOnGround();
+	//Tinkerton: StayOnGround is implemented in CategorizePosition - ripped from TF
+	//StayOnGround();
 }
 
 //-----------------------------------------------------------------------------
@@ -3773,16 +3775,12 @@ void CGameMovement::TryTouchGroundInQuadrants( const Vector& start, const Vector
 //-----------------------------------------------------------------------------
 void CGameMovement::CategorizePosition( void )
 {
-	Vector point;
-	trace_t pm;
+	// Observer.
+	if (player->IsObserver())
+		return;
 
 	// Reset this each time we-recategorize, otherwise we have bogus friction when we jump into water and plunge downward really quickly
 	player->m_surfaceFriction = 1.0f;
-
-	// if the player hull point one unit down is solid, the player
-	// is on ground
-	
-	// see if standing on something solid	
 
 	// Doing this before we move may introduce a potential latency in water detection, but
 	// doing it after can get us stuck on the bottom in water if the amount we move up
@@ -3791,107 +3789,85 @@ void CGameMovement::CategorizePosition( void )
 	// water on each call, and the converse case will correct itself if called twice.
 	CheckWater();
 
-	// observers don't have a ground entity
-	if ( player->IsObserver() )
+	// If standing on a ladder we are not on ground.
+	if (player->GetMoveType() == MOVETYPE_LADDER)
+	{
+		SetGroundEntity(NULL);
 		return;
-
-	float flOffset = 2.0f;
-
-	point[0] = mv->GetAbsOrigin()[0];
-	point[1] = mv->GetAbsOrigin()[1];
-	point[2] = mv->GetAbsOrigin()[2] - flOffset;
-
-	Vector bumpOrigin;
-	bumpOrigin = mv->GetAbsOrigin();
-
-	// Shooting up really fast.  Definitely not on ground.
-	// On ladder moving up, so not on ground either
-	// NOTE: 145 is a jump.
-#define NON_JUMP_VELOCITY 140.0f
-
-	float zvel = mv->m_vecVelocity[2];
-	bool bMovingUp = zvel > 0.0f;
-	bool bMovingUpRapidly = zvel > NON_JUMP_VELOCITY;
-	float flGroundEntityVelZ = 0.0f;
-	if ( bMovingUpRapidly )
-	{
-		// Tracker 73219, 75878:  ywb 8/2/07
-		// After save/restore (and maybe at other times), we can get a case where we were saved on a lift and 
-		//  after restore we'll have a high local velocity due to the lift making our abs velocity appear high.  
-		// We need to account for standing on a moving ground object in that case in order to determine if we really 
-		//  are moving away from the object we are standing on at too rapid a speed.  Note that CheckJump already sets
-		//  ground entity to NULL, so this wouldn't have any effect unless we are moving up rapidly not from the jump button.
-		CBaseEntity *ground = player->GetGroundEntity();
-		if ( ground )
-		{
-			flGroundEntityVelZ = ground->GetAbsVelocity().z;
-			bMovingUpRapidly = ( zvel - flGroundEntityVelZ ) > NON_JUMP_VELOCITY;
-		}
 	}
 
-	// Was on ground, but now suddenly am not
-	if ( bMovingUpRapidly || 
-		( bMovingUp && player->GetMoveType() == MOVETYPE_LADDER ) )   
+	// Check for a jump.
+	if (mv->m_vecVelocity.z > 250.0f)
 	{
-		SetGroundEntity( NULL );
-	}
-	else
-	{
-		// Try and move down.
-		TryTouchGround( bumpOrigin, point, GetPlayerMins(), GetPlayerMaxs(), MASK_PLAYERSOLID, COLLISION_GROUP_PLAYER_MOVEMENT, pm );
-		
-		// Was on ground, but now suddenly am not.  If we hit a steep plane, we are not on ground
-		if ( !pm.m_pEnt || pm.plane.normal[2] < 0.7 )
-		{
-			// Test four sub-boxes, to see if any of them would have found shallower slope we could actually stand on
-			TryTouchGroundInQuadrants( bumpOrigin, point, MASK_PLAYERSOLID, COLLISION_GROUP_PLAYER_MOVEMENT, pm );
+		SetGroundEntity(NULL);
 
-			if ( !pm.m_pEnt || pm.plane.normal[2] < 0.7 )
+//#ifdef GAME_DLL
+//		if (m_pTFPlayer->m_bBlastLaunched)
+//			m_pTFPlayer->SetBlastJumpState(TF_JUMP_OTHER, false);
+//#endif
+
+		return;
+	}
+
+	// Calculate the start and end position.
+	Vector vecStartPos = mv->GetAbsOrigin();
+	Vector vecEndPos(mv->GetAbsOrigin().x, mv->GetAbsOrigin().y, (mv->GetAbsOrigin().z - 2.0f));
+
+	// NOTE YWB 7/5/07:  Since we're already doing a traceline here, we'll subsume the StayOnGround (stair debouncing) check into the main traceline we do here to see what we're standing on
+	bool bUnderwater = (player->GetWaterLevel() >= WL_Eyes);
+	bool bMoveToEndPos = false;
+	if (player->GetMoveType() == MOVETYPE_WALK &&
+		player->GetGroundEntity() != NULL && !bUnderwater)
+	{
+		// if walking and still think we're on ground, we'll extend trace down by stepsize so we don't bounce down slopes
+		vecEndPos.z -= player->GetStepSize();
+		bMoveToEndPos = true;
+	}
+
+	trace_t trace;
+	TracePlayerBBox(vecStartPos, vecEndPos, PlayerSolidMask(), COLLISION_GROUP_PLAYER_MOVEMENT, trace);
+
+	// Steep plane, not on ground.
+	if (trace.plane.normal.z < 0.7f)
+	{
+		// Test four sub-boxes, to see if any of them would have found shallower slope we could actually stand on.
+		TracePlayerBBoxForGround(vecStartPos, vecEndPos, GetPlayerMins(), GetPlayerMaxs(), mv->m_nPlayerHandle.Get(), PlayerSolidMask(), COLLISION_GROUP_PLAYER_MOVEMENT, trace);
+		if (trace.plane.normal[2] < 0.7f)
+		{
+			// Too steep.
+			SetGroundEntity(NULL);
+			if ((mv->m_vecVelocity.z > 0.0f) &&
+				(player->GetMoveType() != MOVETYPE_NOCLIP))
 			{
-				SetGroundEntity( NULL );
-				// probably want to add a check for a +z velocity too!
-				if ( ( mv->m_vecVelocity.z > 0.0f ) && 
-					( player->GetMoveType() != MOVETYPE_NOCLIP ) )
-				{
-					player->m_surfaceFriction = 0.25f;
-				}
-			}
-			else
-			{
-				SetGroundEntity( &pm );
+				player->m_surfaceFriction = 0.25f;
 			}
 		}
 		else
 		{
-			SetGroundEntity( &pm );  // Otherwise, point to index of ent under us.
+			SetGroundEntity(&trace);
 		}
-
-#ifndef CLIENT_DLL
-		
-		//Adrian: vehicle code handles for us.
-		if ( player->IsInAVehicle() == false )
+	}
+	else
+	{
+		// YWB:  This logic block essentially lifted from StayOnGround implementation
+		if (bMoveToEndPos &&
+			!trace.startsolid &&				// not sure we need this check as fraction would == 0.0f?
+			trace.fraction > 0.0f &&			// must go somewhere
+			trace.fraction < 1.0f) 			// must hit something
 		{
-			// If our gamematerial has changed, tell any player surface triggers that are watching
-			IPhysicsSurfaceProps *physprops = MoveHelper()->GetSurfaceProps();
-			surfacedata_t *pSurfaceProp = physprops->GetSurfaceData( pm.surface.surfaceProps );
-			char cCurrGameMaterial = pSurfaceProp->game.material;
-			if ( !player->GetGroundEntity() )
+			float flDelta = fabs(mv->GetAbsOrigin().z - trace.endpos.z);
+			// HACK HACK:  The real problem is that trace returning that strange value 
+			//  we can't network over based on bit precision of networking origins
+			if (flDelta > 0.5f * COORD_RESOLUTION)
 			{
-				cCurrGameMaterial = 0;
+				Vector org = mv->GetAbsOrigin();
+				org.z = trace.endpos.z;
+				mv->SetAbsOrigin(org);
 			}
-
-			// Changed?
-			if ( player->m_chPreviousTextureType != cCurrGameMaterial )
-			{
-				CEnvPlayerSurfaceTrigger::SetPlayerSurface( player, cCurrGameMaterial );
-			}
-
-			player->m_chPreviousTextureType = cCurrGameMaterial;
 		}
-#endif
+		SetGroundEntity(&trace);
 	}
 }
-
 //-----------------------------------------------------------------------------
 // Purpose: Determine if the player has hit the ground while falling, apply
 //			damage, and play the appropriate impact sound.
