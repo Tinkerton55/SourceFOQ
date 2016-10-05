@@ -1279,8 +1279,7 @@ void CNPC_BaseScanner::MoveToTarget( float flInterval, const Vector &vecMoveTarg
 	GetVectors( &forward, &right, &up );
 
 	m_vCurrentBanking.x	= targetDir.x;
-	//m_vCurrentBanking.z	= 120.0f * DotProduct( right, targetDir );
-	m_vCurrentBanking.z = 0;
+	m_vCurrentBanking.z	= 120.0f * DotProduct( right, targetDir );
 	m_vCurrentBanking.y	= 0;
 
 	float speedPerc = SimpleSplineRemapVal( GetCurrentVelocity().Length(), 0.0f, GetMaxSpeed(), 0.0f, 1.0f );
