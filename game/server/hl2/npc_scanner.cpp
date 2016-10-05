@@ -213,7 +213,8 @@ CNPC_CScanner::CNPC_CScanner()
 	Q_strncpy(szMapName, STRING(gpGlobals->mapname), sizeof(szMapName) );
 	Q_strlower(szMapName);
 
-	if( !Q_strnicmp( szMapName, "d3_c17", 6 ) )
+	//if( !Q_strnicmp( szMapName, "foq_e1m1", 8 ) )
+	if (IsStriderScout())
 	{
 		// Streetwar scanners are claw scanners
 		m_bIsClawScanner = true;
@@ -369,20 +370,20 @@ void CNPC_CScanner::Gib( void )
 	}
 
 	// Add a random chance of spawning a battery...
-	if ( !HasSpawnFlags(SF_NPC_NO_WEAPON_DROP) && random->RandomFloat( 0.0f, 1.0f) < 0.3f )
-	{
-		CItem *pBattery = (CItem*)CreateEntityByName("item_battery");
-		if ( pBattery )
-		{
-			pBattery->SetAbsOrigin( GetAbsOrigin() );
-			pBattery->SetAbsVelocity( GetAbsVelocity() );
-			pBattery->SetLocalAngularVelocity( GetLocalAngularVelocity() );
-			pBattery->ActivateWhenAtRest();
-			pBattery->Spawn();
-		}
-	}
+	//if ( !HasSpawnFlags(SF_NPC_NO_WEAPON_DROP) && random->RandomFloat( 0.0f, 1.0f) < 0.3f )
+	//{
+	//	CItem *pBattery = (CItem*)CreateEntityByName("item_battery");
+	//	if ( pBattery )
+	//	{
+	//		pBattery->SetAbsOrigin( GetAbsOrigin() );
+	//		pBattery->SetAbsVelocity( GetAbsVelocity() );
+	//		pBattery->SetLocalAngularVelocity( GetLocalAngularVelocity() );
+	//		pBattery->ActivateWhenAtRest();
+	//		pBattery->Spawn();
+	//	}
+	//}
 
-	DeployMine();
+	//DeployMine();
 
 	BaseClass::Gib();
 }
@@ -415,7 +416,7 @@ void CNPC_CScanner::Event_Killed( const CTakeDamageInfo &info )
 	m_pEyeFlash = NULL;
 
 	// If I have an enemy and I'm up high, do a dive bomb (unless dissolved)
-	if ( !m_bIsClawScanner && GetEnemy() != NULL && (info.GetDamageType() & DMG_DISSOLVE) == false )
+	if ( m_bIsClawScanner && GetEnemy() != NULL && (info.GetDamageType() & DMG_DISSOLVE) == false )
 	{
 		Vector vecDelta = GetLocalOrigin() - GetEnemy()->GetLocalOrigin();
 		//if ( ( vecDelta.z > 120 ) && ( vecDelta.Length() > 360 ) )
@@ -1982,19 +1983,19 @@ void CNPC_CScanner::AttackFlash(void)
 void CNPC_CScanner::BlindFlashTarget( CBaseEntity *pTarget )
 {
 	// Tell all the striders this person is here!
-	CAI_BaseNPC **	ppAIs 	= g_AI_Manager.AccessAIs();
-	int 			nAIs 	= g_AI_Manager.NumAIs();
+	//CAI_BaseNPC **	ppAIs 	= g_AI_Manager.AccessAIs();
+	//int 			nAIs 	= g_AI_Manager.NumAIs();
 	
-	if( IsStriderScout() )
-	{
-		for ( int i = 0; i < nAIs; i++ )
-		{
-			if( FClassnameIs( ppAIs[ i ], "npc_strider" ) )
-			{
-				ppAIs[ i ]->UpdateEnemyMemory( pTarget, pTarget->GetAbsOrigin(), this );
-			}
-		}
-	}
+	//if( IsStriderScout() )
+	//{
+	//	for ( int i = 0; i < nAIs; i++ )
+	//	{
+	//		if( FClassnameIs( ppAIs[ i ], "npc_strider" ) )
+	//		{
+	//			ppAIs[ i ]->UpdateEnemyMemory( pTarget, pTarget->GetAbsOrigin(), this );
+	//		}
+	//	}
+	//}
 
 	// Only bother with player
 	if ( pTarget->IsPlayer() == false )
@@ -2060,11 +2061,11 @@ void CNPC_CScanner::AttackFlashBlind(void)
 
 	float fAttackDelay = 3.0f;
 
-	if( IsStriderScout() )
-	{
+	//if( IsStriderScout() )
+	//{
 		// Make strider scouts more snappy.
-		fAttackDelay *= 0.5;
-	}
+		//fAttackDelay *= 0.5;
+	//}
 
 	m_flNextAttack	= gpGlobals->curtime + fAttackDelay;
 	m_fNextSpotlightTime = gpGlobals->curtime + 1.0f;
@@ -2244,15 +2245,15 @@ void CNPC_CScanner::StartTask( const Task_t *pTask )
 
 	case TASK_CSCANNER_ATTACK_PRE_FLASH:
 	{
-		if( IsStriderScout() )
-		{
-			Vector vecScare = GetEnemy()->EarPosition();
-			Vector vecDir = WorldSpaceCenter() - vecScare;
-			VectorNormalize( vecDir );
-			vecScare += vecDir * 64.0f;
+		//if( IsStriderScout() )
+		//{
+		//	Vector vecScare = GetEnemy()->EarPosition();
+		//	Vector vecDir = WorldSpaceCenter() - vecScare;
+		//	VectorNormalize( vecDir );
+		//	vecScare += vecDir * 64.0f;
 
-			CSoundEnt::InsertSound( SOUND_DANGER, vecScare, 256, 1.0, this );
-		}
+		//	CSoundEnt::InsertSound( SOUND_DANGER, vecScare, 256, 1.0, this );
+		//}
 
 		if (m_pEyeFlash)
 		{
