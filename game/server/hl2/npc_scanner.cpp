@@ -213,8 +213,7 @@ CNPC_CScanner::CNPC_CScanner()
 	Q_strncpy(szMapName, STRING(gpGlobals->mapname), sizeof(szMapName) );
 	Q_strlower(szMapName);
 
-	//if( !Q_strnicmp( szMapName, "foq_e1m1", 8 ) )
-	if (IsStriderScout())
+	if( !Q_strnicmp( szMapName, "d3_c17", 8 ) )
 	{
 		// Streetwar scanners are claw scanners
 		m_bIsClawScanner = true;
