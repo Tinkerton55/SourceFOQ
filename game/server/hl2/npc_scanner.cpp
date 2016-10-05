@@ -2581,19 +2581,19 @@ void CNPC_CScanner::MoveWeave(void) {
 	if (nRand == 1) {
 		vTargetPos.x += RandomFloat(500.0f, 1000.0f);
 		vTargetPos.y += RandomFloat(500.0f, 1000.0f);
-		vTargetPos.z += RandomFloat(500.0f, 1000.0f);
+		vTargetPos.z += RandomFloat(250.0f, 600.0f);
 	}
 	else {
 		vTargetPos.x -= RandomFloat(500.0f, 1000.0f);
 		vTargetPos.y -= RandomFloat(500.0f, 1000.0f);
-		vTargetPos.z -= RandomFloat(500.0f, 1000.0f);
+		vTargetPos.z -= RandomFloat(250.0f, 600.0f);
 	}
 	//float flDesiredDist = m_flAttackNearDist + ( ( m_flAttackFarDist - m_flAttackNearDist ) / 2 );
 
 	Vector idealPos = IdealGoalForMovement(vTargetPos, GetAbsOrigin(), GetGoalDistance(), m_flAttackNearDist);
 
 	MoveToTarget(0.5f, idealPos);
-	float myAccel = RandomFloat(500.0f, 1000.0f);;
+	float myAccel = RandomFloat(500.0f, 1000.0f);
 	float myZAccel = RandomFloat(500.0f, 1000.0f);
 	float myDecay = 0.15f;
 	float myInterval = 0.75f;
