@@ -276,6 +276,9 @@ void CNPC_CScanner::Spawn(void)
 	m_nCurrentWeave			= 1;
 	m_nMaxWeaves			= SCANNER_MAX_WEAVES;
 	m_bDoneWeaving			= false;
+	if (m_bIsClawScanner) {
+		m_bIsOpen = true;
+	}
 
 	m_vSpotlightTargetPos	= vec3_origin;
 	m_vSpotlightCurrentPos	= vec3_origin;
@@ -498,7 +501,7 @@ void CNPC_CScanner::HandleAnimEvent( animevent_t *pEvent )
 {
 	if( pEvent->event == AE_SCANNER_CLOSED )
 	{
-		m_bIsOpen = false;
+		//m_bIsOpen = false;
 		SetActivity( ACT_IDLE );
 		return;
 	}
