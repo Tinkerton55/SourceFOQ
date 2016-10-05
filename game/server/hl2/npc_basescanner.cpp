@@ -1183,7 +1183,7 @@ void CNPC_BaseScanner::MoveToAttack(float flInterval)
 		return;
 
 	Vector vTargetPos = GetEnemyLKP();
-
+	
 	//float flDesiredDist = m_flAttackNearDist + ( ( m_flAttackFarDist - m_flAttackNearDist ) / 2 );
 
 	Vector idealPos = IdealGoalForMovement( vTargetPos, GetAbsOrigin(), GetGoalDistance(), m_flAttackNearDist );
@@ -1266,6 +1266,12 @@ void CNPC_BaseScanner::MoveToTarget( float flInterval, const Vector &vecMoveTarg
 		myZAccel = flDist / flInterval;
 	}
 
+	Vector vCurrVelocity = GetCurrentVelocity();
+	vCurrVelocity.x = NULL;
+	vCurrVelocity.y = NULL;
+	vCurrVelocity.z *= -1;
+	ApplyAbsVelocityImpulse(vCurrVelocity);
+	targetDir.z = GetAbsOrigin().z;
 	MoveInDirection( flInterval, targetDir, myAccel, myZAccel, myDecay );
 
 	// calc relative banking targets
@@ -1273,7 +1279,8 @@ void CNPC_BaseScanner::MoveToTarget( float flInterval, const Vector &vecMoveTarg
 	GetVectors( &forward, &right, &up );
 
 	m_vCurrentBanking.x	= targetDir.x;
-	m_vCurrentBanking.z	= 120.0f * DotProduct( right, targetDir );
+	//m_vCurrentBanking.z	= 120.0f * DotProduct( right, targetDir );
+	m_vCurrentBanking.z = 0;
 	m_vCurrentBanking.y	= 0;
 
 	float speedPerc = SimpleSplineRemapVal( GetCurrentVelocity().Length(), 0.0f, GetMaxSpeed(), 0.0f, 1.0f );
@@ -1392,7 +1399,7 @@ float CNPC_BaseScanner::GetGoalDistance( void )
 		break;
 	}
 
-	return 128.0f;
+	return 32.0f;
 }
 
 //-----------------------------------------------------------------------------

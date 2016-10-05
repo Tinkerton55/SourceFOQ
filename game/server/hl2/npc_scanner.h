@@ -128,7 +128,11 @@ public:
 	float			m_flSpotlightMaxLength;
 	float			m_flSpotlightGoalWidth;
 	float			m_fNextSpotlightTime;
+	float			m_flNextWeave;
 	int				m_nHaloSprite;
+	
+	int				m_nCurrentWeave;
+	int				m_nMaxWeaves;
 
 	void			SpotlightUpdate(void);
 	Vector			SpotlightTargetPos(void);
@@ -150,6 +154,7 @@ private:
 	COutputEvent		m_OnPhotographNPC;
 
 	bool				OverrideMove(float flInterval);
+	void				MoveWeave();
 	void				MoveToTarget(float flInterval, const Vector &MoveTarget);
 	void				MoveToSpotlight(float flInterval);
 	void				MoveToPhotograph(float flInterval);
@@ -157,6 +162,7 @@ private:
 	// Attacks
 	bool				m_bNoLight;
 	bool				m_bPhotoTaken;
+	bool				m_bDoneWeaving;
 
 	void				AttackPreFlash(void);
 	void				AttackFlash(void);
@@ -188,6 +194,7 @@ private:
 		SCHED_CSCANNER_ATTACK_FLASH,
 		SCHED_CSCANNER_MOVE_TO_INSPECT,
 		SCHED_CSCANNER_PATROL,
+		SCHED_CSCANNER_MOVE_WEAVE,
 
 		NEXT_SCHEDULE,
 	};
@@ -205,6 +212,8 @@ private:
 		TASK_CSCANNER_SPOT_INSPECT_OFF,
 		TASK_CSCANNER_CLEAR_INSPECT_TARGET,
 		TASK_CSCANNER_GET_PATH_TO_INSPECT_TARGET,
+		TASK_CSCANNER_MOVE_WEAVE,
+		TASK_SELECT_SCHEDULE,
 
 		NEXT_TASK,
 	};

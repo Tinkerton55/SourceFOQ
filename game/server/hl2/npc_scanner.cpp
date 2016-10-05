@@ -16,6 +16,7 @@
 #include "npc_citizen17.h"
 #include "gib.h"
 #include "spotlightend.h"
+#include "prop_combine_ball.h"
 #include "IEffects.h"
 #include "items.h"
 #include "ai_route.h"
@@ -36,15 +37,15 @@ extern IMaterialSystemHardwareConfig *g_pMaterialSystemHardwareConfig;
 //-----------------------------------------------------------------------------
 // Parameters for how the scanner relates to citizens.
 //-----------------------------------------------------------------------------
-#define SCANNER_CIT_INSPECT_DELAY		10		// Check for citizens this often
-#define	SCANNER_CIT_INSPECT_GROUND_DIST	500		// How far to look for citizens to inspect
+#define SCANNER_CIT_INSPECT_DELAY		5		// Check for citizens this often
+#define	SCANNER_CIT_INSPECT_GROUND_DIST	1500	// How far to look for citizens to inspect
 #define	SCANNER_CIT_INSPECT_FLY_DIST	1500	// How far to look for citizens to inspect
 
-#define SCANNER_CIT_INSPECT_LENGTH		5		// How long does the inspection last
-#define SCANNER_HINT_INSPECT_LENGTH		5		// How long does the inspection last
-#define SCANNER_SOUND_INSPECT_LENGTH	5		// How long does the inspection last
+#define SCANNER_CIT_INSPECT_LENGTH		1.5		// How long does the inspection last
+#define SCANNER_HINT_INSPECT_LENGTH		1.5		// How long does the inspection last
+#define SCANNER_SOUND_INSPECT_LENGTH	1.5		// How long does the inspection last
 
-#define SCANNER_HINT_INSPECT_DELAY		15		// Check for hint nodes this often
+#define SCANNER_HINT_INSPECT_DELAY		1		// Check for hint nodes this often
 	
 #define	SPOTLIGHT_WIDTH					32
 
@@ -52,21 +53,24 @@ extern IMaterialSystemHardwareConfig *g_pMaterialSystemHardwareConfig;
 #define SCANNER_SPOTLIGHT_FAR_DIST		256
 #define SCANNER_SPOTLIGHT_FLY_HEIGHT	72
 #define SCANNER_NOSPOTLIGHT_FLY_HEIGHT	72
+	
+#define SCANNER_MIN_WEAVES				2
+#define SCANNER_MAX_WEAVES				5
 
 #define SCANNER_FLASH_MIN_DIST			900		// How far does flash effect enemy
 #define SCANNER_FLASH_MAX_DIST			1200	// How far does flash effect enemy
 
 #define	SCANNER_FLASH_MAX_VALUE			240		// How bright is maximum flash
 
-#define SCANNER_PHOTO_NEAR_DIST			64
-#define SCANNER_PHOTO_FAR_DIST			128
+#define SCANNER_PHOTO_NEAR_DIST			32
+#define SCANNER_PHOTO_FAR_DIST			1024
 
-#define	SCANNER_FOLLOW_DIST				128
+#define	SCANNER_FOLLOW_DIST				256
 
 #define	SCANNER_NUM_GIBS				6		// Number of gibs in gib file
 
 // Strider Scout Scanners
-#define SCANNER_SCOUT_MAX_SPEED			150
+#define SCANNER_SCOUT_MAX_SPEED			400
 
 ConVar	sk_scanner_health( "sk_scanner_health","0");
 ConVar	g_debug_cscanner( "g_debug_cscanner", "0" );
@@ -147,6 +151,7 @@ BEGIN_DATADESC( CNPC_CScanner )
 	DEFINE_FIELD( m_nPoseFlare,				FIELD_INTEGER ),
 	DEFINE_FIELD( m_nPoseFaceVert,			FIELD_INTEGER ),
 	DEFINE_FIELD( m_nPoseFaceHoriz,			FIELD_INTEGER ),
+	DEFINE_FIELD( m_nCurrentShot,			FIELD_INTEGER ),
 
 	DEFINE_FIELD( m_bIsClawScanner,			FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bIsOpen,				FIELD_BOOLEAN ),
@@ -265,6 +270,12 @@ void CNPC_CScanner::Spawn(void)
 	m_fCheckCitizenTime		= gpGlobals->curtime + SCANNER_CIT_INSPECT_DELAY;
 	m_fCheckHintTime		= gpGlobals->curtime + SCANNER_HINT_INSPECT_DELAY;
 	m_fNextPhotographTime	= 0;
+	m_flNextAttack			= 0;
+	m_flNextWeave			= 0;
+	m_nCurrentShot			= 1;
+	m_nCurrentWeave			= 1;
+	m_nMaxWeaves			= SCANNER_MAX_WEAVES;
+	m_bDoneWeaving			= false;
 
 	m_vSpotlightTargetPos	= vec3_origin;
 	m_vSpotlightCurrentPos	= vec3_origin;
@@ -958,10 +969,10 @@ void CNPC_CScanner::DeployMine()
 //-----------------------------------------------------------------------------
 float CNPC_CScanner::GetMaxSpeed()
 {
-	if( IsStriderScout() )
-	{
+	//if( IsStriderScout() )
+	//{
 		return SCANNER_SCOUT_MAX_SPEED;
-	}
+	//}
 
 	return BaseClass::GetMaxSpeed();
 }
@@ -1357,11 +1368,11 @@ void CNPC_CScanner::RunTask( const Task_t *pTask )
 		}
 		case TASK_CSCANNER_ATTACK_FLASH:
 		{
-			if (IsWaitFinished())
-			{
+			//if (IsWaitFinished())
+			//{
 				AttackFlashBlind();
 				TaskComplete();
-			}
+			//}
 			break;
 		}
 		default:
@@ -1412,8 +1423,8 @@ int CNPC_CScanner::SelectSchedule(void)
 
 		if ( m_NPCState == NPC_STATE_ALERT )
 		{
-			if ( m_iHealth < ( 3 * sk_scanner_health.GetFloat() / 4 ))
-				return SCHED_TAKE_COVER_FROM_ORIGIN;
+			//if ( m_iHealth < ( 3 * sk_scanner_health.GetFloat() / 4 ))
+				//return SCHED_TAKE_COVER_FROM_ORIGIN;
 
 			if ( SelectWeightedSequence( ACT_SMALL_FLINCH ) != -1 )
 				return SCHED_SMALL_FLINCH;
@@ -1432,10 +1443,29 @@ int CNPC_CScanner::SelectSchedule(void)
 	// ----------------------------------------------------------
 	//  If I have an enemy
 	// ----------------------------------------------------------
-	if ( GetEnemy() != NULL && GetEnemy()->IsAlive() && m_bShouldInspect )
+	//if ( GetEnemy() != NULL && GetEnemy()->IsAlive() && m_bShouldInspect )
+	if (GetEnemy() != NULL && GetEnemy()->IsAlive())
 	{
+		if ((gpGlobals->curtime > m_flNextAttack) && HasCondition(COND_SEE_ENEMY) && m_bDoneWeaving == true) {
+			m_bDoneWeaving = false;
+			return SCHED_CSCANNER_ATTACK_FLASH;
+		} else {
+			if (m_nCurrentWeave == 1) {
+				m_nMaxWeaves = RandomInt(SCANNER_MIN_WEAVES, SCANNER_MAX_WEAVES);
+			}
+			else if (m_nCurrentWeave >= m_nMaxWeaves || m_nCurrentWeave < 1) {
+				m_nCurrentWeave = 1;
+				m_bDoneWeaving = true;
+			}
+			if (gpGlobals->curtime > m_flNextWeave && m_bDoneWeaving == false){
+					m_flNextWeave = gpGlobals->curtime + 0.75f;
+					m_nCurrentWeave++;
+					MoveWeave();
+				}
+			return SCHED_SCANNER_ATTACK_HOVER;
+		}
 		// Always chase the enemy
-		SetInspectTargetToEnt( GetEnemy(), 9999 );
+		SetInspectTargetToEnt(GetEnemy(), 9999);
 
 		// Patrol if the enemy has vanished
 		if ( HasCondition( COND_LOST_ENEMY ) )
@@ -1976,29 +2006,43 @@ void CNPC_CScanner::BlindFlashTarget( CBaseEntity *pTarget )
 	
 	Vector vFacing;
 	AngleVectors( pTarget->EyeAngles(), &vFacing );
-
-	float dotPr	= DotProduct( vFlashDir, vFacing );
-
+	//float dotPr	= DotProduct( vFlashDir, vFacing );
 	// Not if behind us
-	if ( dotPr > 0.5f )
-	{
+	//if ( dotPr > 0.5f )
+	//{
+		Vector vecVelocity = vFlashDir * -1000.0f;
 		// Make sure nothing in the way
 		trace_t tr;
 		AI_TraceLine ( GetAbsOrigin(), pTarget->EyePosition(), MASK_OPAQUE, this, COLLISION_GROUP_NONE, &tr );
-
-		if ( tr.startsolid == false && tr.fraction == 1.0)
-		{
-			color32 white = { 255, 255, 255, SCANNER_FLASH_MAX_VALUE * dotPr };
-
-			if ( ( g_pMaterialSystemHardwareConfig != NULL ) && ( g_pMaterialSystemHardwareConfig->GetHDRType() != HDR_TYPE_NONE ) )
-			{
-				white.a = ( byte )( ( float )white.a * 0.9f );
-			}
-
-			float flFadeTime = ( IsX360() ) ? 0.5f : 3.0f;
-			UTIL_ScreenFade( pTarget, white, flFadeTime, 0.5, FFADE_IN );
+		CreateCombineBall(GetAbsOrigin(),
+			vecVelocity,
+			32.0f,
+			30.0f,
+			10.0f,
+			this);
+		Vector forward, up;
+		AngleVectors(GetLocalAngles(), &forward, NULL, &up);
+		if (m_nCurrentShot > 3 || m_nCurrentShot < 1) {
+			m_nCurrentShot = 1;
 		}
-	}
+		ApplyAbsVelocityImpulse(forward * (-50 * m_nCurrentShot) + up * (10 * m_nCurrentShot));
+		if (m_nCurrentShot >= 3) {
+			m_nCurrentShot = 1;
+		}
+		m_nCurrentShot++;
+		//if ( tr.startsolid == false && tr.fraction == 1.0)
+		//{
+		//	color32 white = { 255, 255, 255, SCANNER_FLASH_MAX_VALUE * dotPr };
+
+		//	if ( ( g_pMaterialSystemHardwareConfig != NULL ) && ( g_pMaterialSystemHardwareConfig->GetHDRType() != HDR_TYPE_NONE ) )
+		//	{
+		//		white.a = ( byte )( ( float )white.a * 0.9f );
+		//	}
+
+		//	float flFadeTime = ( IsX360() ) ? 0.5f : 3.0f;
+		//	UTIL_ScreenFade( pTarget, white, flFadeTime, 0.5, FFADE_IN );
+		//}
+	//}
 }
 
 //------------------------------------------------------------------------------
@@ -2006,14 +2050,15 @@ void CNPC_CScanner::BlindFlashTarget( CBaseEntity *pTarget )
 //------------------------------------------------------------------------------
 void CNPC_CScanner::AttackFlashBlind(void)
 {
-	if( GetEnemy() )
-	{
+	//if( GetEnemy() )
+	//{
 		BlindFlashTarget( GetEnemy() );
-	}
+
+	//}
 
 	m_pEyeFlash->SetBrightness( 0 );
 
-	float fAttackDelay = random->RandomFloat(SCANNER_ATTACK_MIN_DELAY,SCANNER_ATTACK_MAX_DELAY);
+	float fAttackDelay = 3.0f;
 
 	if( IsStriderScout() )
 	{
@@ -2224,9 +2269,10 @@ void CNPC_CScanner::StartTask( const Task_t *pTask )
 
 	case TASK_CSCANNER_ATTACK_FLASH:
 	{
-		AttackFlash();
+		//AttackFlash();
+		AttackFlashBlind();
 		// Blinding occurs slightly later
-		SetWait( 0.05 );
+		//SetWait( 0.05 );
 		break;
 	}
 
@@ -2509,7 +2555,73 @@ void CNPC_CScanner::MoveToTarget( float flInterval, const Vector &vecMoveTarget 
 	m_vCurrentBanking *= speedPerc;
 }
 
+void CNPC_CScanner::MoveWeave(void) {
 
+	//Vector forward, right, up;
+	//int nRandDirectionHorizontal = RandomInt(0, 1);
+	//int nRandDirectionVertical = RandomInt(0, 1);
+
+	//AngleVectors(GetLocalAngles(), &forward, &right, &up);
+
+	//int nRandVelocityHorizontal = RandomInt(100, 200);
+	//int nRandVelocityVertical = RandomInt(100, 200);
+	//if (nRandDirectionHorizontal == 1) {
+	//	nRandVelocityHorizontal *= -1;
+	//}
+	//if (nRandDirectionVertical == 1) {
+	//	nRandVelocityVertical *= -1;
+	//}
+	//ApplyAbsVelocityImpulse(right * nRandVelocityHorizontal + forward * 50 + up * nRandVelocityVertical);
+
+	// -------------------------------------
+	// Move towards our target
+	// -------------------------------------
+	int nRand = RandomInt(0, 1);
+	Vector vTargetPos = GetAbsOrigin();
+	if (nRand == 1) {
+		vTargetPos.x += RandomFloat(500.0f, 1000.0f);
+		vTargetPos.y += RandomFloat(500.0f, 1000.0f);
+		vTargetPos.z += RandomFloat(500.0f, 1000.0f);
+	}
+	else {
+		vTargetPos.x -= RandomFloat(500.0f, 1000.0f);
+		vTargetPos.y -= RandomFloat(500.0f, 1000.0f);
+		vTargetPos.z -= RandomFloat(500.0f, 1000.0f);
+	}
+	//float flDesiredDist = m_flAttackNearDist + ( ( m_flAttackFarDist - m_flAttackNearDist ) / 2 );
+
+	Vector idealPos = IdealGoalForMovement(vTargetPos, GetAbsOrigin(), GetGoalDistance(), m_flAttackNearDist);
+
+	MoveToTarget(0.5f, idealPos);
+	float myAccel = RandomFloat(500.0f, 1000.0f);;
+	float myZAccel = RandomFloat(500.0f, 1000.0f);
+	float myDecay = 0.15f;
+	float myInterval = 0.75f;
+
+	Vector vecCurrentDir;
+
+	// Get the relationship between my current velocity and the way I want to be going.
+	vecCurrentDir = GetCurrentVelocity();
+	VectorNormalize(vecCurrentDir);
+
+	Vector targetDir = idealPos - GetAbsOrigin();
+	float flDist = VectorNormalize(targetDir);
+
+	float flDot;
+	flDot = DotProduct(targetDir, vecCurrentDir);
+
+	if (myAccel > flDist / myInterval)
+	{
+		myAccel = flDist / myInterval;
+	}
+
+	if (myZAccel > flDist / myInterval)
+	{
+		myZAccel = flDist / myInterval;
+	}
+
+	MoveInDirection(myInterval, targetDir, myAccel, myZAccel, myDecay);
+}
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : flInterval - 
@@ -2968,7 +3080,11 @@ AI_BEGIN_CUSTOM_NPC( npc_cscanner, CNPC_CScanner )
 		"		TASK_SET_ACTIVITY					ACTIVITY:ACT_IDLE"
 		"		TASK_CSCANNER_ATTACK_PRE_FLASH		0 "
 		"		TASK_CSCANNER_ATTACK_FLASH			0"
-		"		TASK_WAIT							0.5"
+		"		TASK_WAIT							0.25"
+		"		TASK_CSCANNER_ATTACK_FLASH			0"
+		"		TASK_WAIT							0.25"
+		"		TASK_CSCANNER_ATTACK_FLASH			0"
+		"		TASK_WAIT							0.25"
 		""
 		"	Interrupts"
 		"		COND_NEW_ENEMY"

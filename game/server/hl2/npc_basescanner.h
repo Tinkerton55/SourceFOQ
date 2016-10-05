@@ -45,16 +45,16 @@ enum ScannerInspectAct_t
 #define SCANNER_SENTENCE_CURIOUS	3
 
 // Scanner attack distances
-#define SCANNER_ATTACK_NEAR_DIST		150		// Fly attack min distance
-#define SCANNER_ATTACK_FAR_DIST			300		// Fly attack max distance
-#define SCANNER_ATTACK_RANGE			350		// Attack max distance
-#define	SCANNER_ATTACK_MIN_DELAY		8		// Min time between attacks
-#define	SCANNER_ATTACK_MAX_DELAY		12		// Max time between attacks
+#define SCANNER_ATTACK_NEAR_DIST		32		// Fly attack min distance
+#define SCANNER_ATTACK_FAR_DIST			1024		// Fly attack max distance
+#define SCANNER_ATTACK_RANGE			1024	// Attack max distance
+#define	SCANNER_ATTACK_MIN_DELAY		2		// Min time between attacks
+#define	SCANNER_ATTACK_MAX_DELAY		2		// Max time between attacks
 #define	SCANNER_EVADE_TIME				1		// How long to evade after take damage
 
 // Scanner movement vars
 #define	SCANNER_BANK_RATE				30
-#define	SCANNER_MAX_SPEED				250
+#define	SCANNER_MAX_SPEED				400
 #define	SCANNER_MAX_DIVE_BOMB_SPEED		2500
 #define SCANNER_SQUAD_FLY_DIST			500		// How far to scanners stay apart
 #define SCANNER_SQUAD_HELP_DIST			4000	// How far will I fly to help
@@ -183,6 +183,7 @@ protected:
 	int					m_nPoseFlare;
 	int					m_nPoseFaceVert;
 	int					m_nPoseFaceHoriz;
+	int					m_nCurrentShot;
 
 	bool				m_bHasSpoken;
 
