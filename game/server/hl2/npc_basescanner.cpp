@@ -1183,7 +1183,7 @@ void CNPC_BaseScanner::MoveToAttack(float flInterval)
 		return;
 
 	Vector vTargetPos = GetEnemyLKP();
-
+	
 	//float flDesiredDist = m_flAttackNearDist + ( ( m_flAttackFarDist - m_flAttackNearDist ) / 2 );
 
 	Vector idealPos = IdealGoalForMovement( vTargetPos, GetAbsOrigin(), GetGoalDistance(), m_flAttackNearDist );
@@ -1266,6 +1266,12 @@ void CNPC_BaseScanner::MoveToTarget( float flInterval, const Vector &vecMoveTarg
 		myZAccel = flDist / flInterval;
 	}
 
+	Vector vCurrVelocity = GetCurrentVelocity();
+	vCurrVelocity.x = NULL;
+	vCurrVelocity.y = NULL;
+	vCurrVelocity.z *= -1;
+	ApplyAbsVelocityImpulse(vCurrVelocity);
+	targetDir.z = GetAbsOrigin().z;
 	MoveInDirection( flInterval, targetDir, myAccel, myZAccel, myDecay );
 
 	// calc relative banking targets
@@ -1392,7 +1398,7 @@ float CNPC_BaseScanner::GetGoalDistance( void )
 		break;
 	}
 
-	return 128.0f;
+	return 32.0f;
 }
 
 //-----------------------------------------------------------------------------
