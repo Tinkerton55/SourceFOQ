@@ -279,6 +279,7 @@ void CNPC_CScanner::Spawn(void)
 	if (m_bIsClawScanner) {
 		m_bIsOpen = true;
 	}
+	m_bNoLight = false;
 
 	m_vSpotlightTargetPos	= vec3_origin;
 	m_vSpotlightCurrentPos	= vec3_origin;
@@ -306,6 +307,11 @@ void CNPC_CScanner::Spawn(void)
 	CapabilitiesAdd( bits_CAP_INNATE_MELEE_ATTACK1 );
 
 	m_bPhotoTaken = false;
+
+	if (m_hSpotlight)
+	{
+		SpotlightDestroy();
+	}
 
 	BaseClass::Spawn();
 
@@ -534,7 +540,7 @@ void CNPC_CScanner::NPCThink(void)
 	else
 	{
 		BaseClass::NPCThink();
-		SpotlightUpdate();
+		//SpotlightUpdate();
 	}
 }
 
@@ -1447,6 +1453,9 @@ int CNPC_CScanner::SelectSchedule(void)
 	//  If I have an enemy
 	// ----------------------------------------------------------
 	//if ( GetEnemy() != NULL && GetEnemy()->IsAlive() && m_bShouldInspect )
+	if (GetEnemy() == NULL) {
+		return SCHED_IDLE_STAND;
+	}
 	if (GetEnemy() != NULL && GetEnemy()->IsAlive())
 	{
 		if ((gpGlobals->curtime > m_flNextAttack) && HasCondition(COND_SEE_ENEMY) && m_bDoneWeaving == true) {
@@ -3081,6 +3090,7 @@ AI_BEGIN_CUSTOM_NPC( npc_cscanner, CNPC_CScanner )
 		"	Tasks"
 		"		TASK_SCANNER_SET_FLY_ATTACK			0"
 		"		TASK_SET_ACTIVITY					ACTIVITY:ACT_IDLE"
+		"		TASK_STOP_MOVING					0"
 		"		TASK_CSCANNER_ATTACK_PRE_FLASH		0 "
 		"		TASK_CSCANNER_ATTACK_FLASH			0"
 		"		TASK_WAIT							0.25"
