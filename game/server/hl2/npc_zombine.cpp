@@ -48,7 +48,7 @@ enum
 #define MAX_SPRINT_TIME 5.5f
 
 #define MIN_SPRINT_DISTANCE 1.0f
-#define MAX_SPRINT_DISTANCE 1024.0f
+#define MAX_SPRINT_DISTANCE 4096.0f
 
 #define SPRINT_CHANCE_VALUE 10
 #define SPRINT_CHANCE_VALUE_DARKNESS 50
@@ -164,6 +164,8 @@ private:
 
 	float	m_flSprintTime;
 	float	m_flSprintRestTime;
+	float	m_flNextBoost;				// Tinkerton: Time at which I can get a physboost forward again when sprinting
+
 
 	float	m_flSuperFastAttackTime;
 	float   m_flGrenadePullTime;
@@ -216,6 +218,7 @@ void CNPC_Zombine::Spawn( void )
 	SetMaxHealth( m_iHealth );
 
 	m_flFieldOfView		= 0.4;
+	m_flNextBoost		= 0;
 
 	CapabilitiesClear();
 
@@ -271,6 +274,14 @@ void CNPC_Zombine::PrescheduleThink( void )
 {
 	m_flNextFlinchTime = gpGlobals->curtime + 999;
 	//GatherGrenadeConditions();
+
+	if (GetIdealActivity() == ACT_RUN && gpGlobals->curtime > m_flNextBoost) {
+		Vector forward;
+		GetVectors(&forward, NULL, NULL);
+		forward *= 200;
+		ApplyAbsVelocityImpulse(forward);
+		m_flNextBoost = gpGlobals->curtime + 0.25f;
+	}
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
 	{
@@ -350,10 +361,10 @@ Activity CNPC_Zombine::NPC_TranslateActivity( Activity baseAct )
 {
 	if ( baseAct == ACT_MELEE_ATTACK1 )
 	{
-		if ( m_flSuperFastAttackTime > gpGlobals->curtime )
-		{
+		//if ( m_flSuperFastAttackTime > gpGlobals->curtime )
+		//{
 			return (Activity)ACT_ZOMBINE_ATTACK_FAST;
-		}
+		//}
 	}
 
 	//if ( baseAct == ACT_IDLE )
@@ -669,7 +680,7 @@ void CNPC_Zombine::StopSprint( void )
 	GetNavigator()->SetMovementActivity( ACT_WALK );
 
 	m_flSprintTime = gpGlobals->curtime;
-	m_flSprintRestTime = m_flSprintTime + random->RandomFloat( 2.5f, 5.0f );
+	m_flSprintRestTime = m_flSprintTime + 0.5f;
 }
 
 void CNPC_Zombine::Sprint( bool bMadSprint )
@@ -708,12 +719,12 @@ void CNPC_Zombine::RunTask( const Task_t *pTask )
 			//Only do this if I have an enemy
 			if ( GetEnemy() )
 			{
-				//if ( AllowedToSprint() == true )
-				//{
-					//Sprint( ( GetHealth() <= GetMaxHealth() * 0.5f ) );
+				if ( AllowedToSprint() == true )
+				{
+					//Sprint( ( GetHealth() <= GetMaxHealth() * 0.5f ) 
 					Sprint(true);
 					return;
-				//}
+				}
 
 				if ( HasGrenade() )
 				{
