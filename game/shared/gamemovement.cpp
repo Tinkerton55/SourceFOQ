@@ -3933,7 +3933,17 @@ void CGameMovement::CheckFalling( void )
 
 	// let any subclasses know that the player has landed and how hard
 	OnLand(player->m_Local.m_flFallVelocity);
-	
+	if (player->m_Local.m_flFallVelocity > PLAYER_MAX_SAFE_FALL_SPEED) {
+		float flFallVelocityFraction = player->m_Local.m_flFallVelocity / PLAYER_FATAL_FALL_SPEED;
+		if (flFallVelocityFraction > 1.0f) {
+			flFallVelocityFraction = 1.0f;
+		}
+		float flFallShakeAmplitude = flFallVelocityFraction * 10;
+		float flFallShakeFrequency = flFallVelocityFraction * 10.0f;
+		float flFallShakeDuration = flFallVelocityFraction * 0.5f;
+		
+		UTIL_ScreenShake(player->GetAbsOrigin(), flFallShakeAmplitude, flFallShakeFrequency, flFallShakeDuration, 750.0f, SHAKE_START);
+	}
 	//
 	// Clear the fall velocity so the impact doesn't happen again.
 	//
