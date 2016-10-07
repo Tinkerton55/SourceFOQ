@@ -284,10 +284,11 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 	//=========================================================
 	float CSingleplayRules::FlPlayerFallDamage( CBasePlayer *pPlayer )
 	{
+		return 0.0f;
 		// subtract off the speed at which a player is allowed to fall without being hurt,
 		// so damage will be based on speed beyond that, not the entire fall
-		pPlayer->m_Local.m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
-		return pPlayer->m_Local.m_flFallVelocity * DAMAGE_FOR_FALL_SPEED;
+		//pPlayer->m_Local.m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
+		//return pPlayer->m_Local.m_flFallVelocity * DAMAGE_FOR_FALL_SPEED;
 	}
 
 	//=========================================================
