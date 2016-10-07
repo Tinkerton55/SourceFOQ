@@ -39,7 +39,7 @@ int g_fCombineQuestion;				// true if an idle grunt asked a question. Cleared wh
 #define COMBINE_SKIN_SHOTGUNNER		1
 
 
-#define COMBINE_GRENADE_THROW_SPEED 650
+#define COMBINE_GRENADE_THROW_SPEED 1024
 #define COMBINE_GRENADE_TIMER		3.5
 #define COMBINE_GRENADE_FLUSH_TIME	3.0		// Don't try to flush an enemy who has been out of sight for longer than this.
 #define COMBINE_GRENADE_FLUSH_DIST	256.0	// Don't try to flush an enemy who has moved farther than this distance from the last place I saw him.
@@ -2432,22 +2432,27 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 				}
 				else
 				{
-						Vector forward, up, vecThrow;
-						float height_delta = 0.0f;
-						GetVectors(&forward, NULL, &up);
-						//vecThrow = forward * 750 + up * 175;
-						height_delta = (GetEnemy()->WorldSpaceCenter().z - this->WorldSpaceCenter().z);
-						if (height_delta < 0) {
-							up *= (100+height_delta);
+						Vector up, vecThrow;
+						CBaseEntity *pTarget = GetEnemy();
+
+						//Tinkerton: Arc the shot upwards the further the player is
+						vec_t vTargetDist = GetAbsOrigin().DistTo(pTarget->GetAbsOrigin());
+						float flTargetDistFraction = vTargetDist / COMBINE_GRENADE_THROW_SPEED;
+						if (flTargetDistFraction > 1.0f) {
+							flTargetDistFraction = 1.0f;
 						}
-						else {
-							up *= height_delta * 4.0f;
-						}
-						vecThrow = forward * 1024 + up;
+						GetVectors(NULL, NULL, &up);
+						up *= flTargetDistFraction * 256.0f;
+
+						//Tinkerton: Calculate throw vector
+						Vector vEnemyPos = pTarget->GetAbsOrigin();
+						vecThrow = GetAbsOrigin() - vEnemyPos;
+						VectorNormalize(vecThrow);
+						vecThrow *= -COMBINE_GRENADE_THROW_SPEED;
+
+						//Tinkerton: Add arc
+						vecThrow += up;
 						Fraggrenade_Create(vecStart, vec3_angle, vecThrow, vecSpin, this, COMBINE_GRENADE_TIMER, true);
-					// Use the Velocity that AI gave us.
-					//Fraggrenade_Create( vecStart, vec3_angle, m_vecTossVelocity, vecSpin, this, COMBINE_GRENADE_TIMER, true );
-					//m_iNumGrenades--;
 				}
 
 				// wait six seconds before even looking again to see if a grenade can be thrown.
