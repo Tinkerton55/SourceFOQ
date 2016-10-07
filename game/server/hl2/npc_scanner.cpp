@@ -2087,6 +2087,7 @@ void CNPC_CScanner::AttackFlashBlind(void)
 //------------------------------------------------------------------------------
 void CNPC_CScanner::AttackDivebomb( void )
 {
+	m_bIsOpen = false;
 	if (m_hSpotlight)
 	{
 		SpotlightDestroy();
