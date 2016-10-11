@@ -60,6 +60,8 @@ const int HEADCRAB_MAX_JUMP_DIST = 256;
 
 #define HEADCRAB_BURROW_POINT_SEARCH_RADIUS 256.0
 
+#define	HEADCRAB_TIME_TO_LIVE 20.0f
+
 // Debugging
 #define	HEADCRAB_DEBUG_HIDING		1
 
@@ -936,6 +938,9 @@ void CBaseHeadcrab::LeapTouch( CBaseEntity *pOther )
 				BiteSound();
 				TouchDamage( pOther );
 
+				CTakeDamageInfo info(this, this, 100.0f, DMG_GENERIC, 0);
+				TakeDamage(info);
+
 				// attack succeeded, so don't delay our next attack if we previously thought we failed
 				m_bAttackFailed = false;
 			}
@@ -1790,7 +1795,23 @@ void CBaseHeadcrab::Event_Killed( const CTakeDamageInfo &info )
 		UTIL_DecalTrace( &tr, "YellowBlood" );
 	}
 
-	BaseClass::Event_Killed( info );
+	UTIL_BloodSpray(GetAbsOrigin(), Vector(0, 0, -1),
+		BLOOD_COLOR_YELLOW, 4, FX_BLOODSPRAY_ALL);
+	UTIL_BloodSpray(GetAbsOrigin(), Vector(0, 0, 1),
+		BLOOD_COLOR_YELLOW, 4, FX_BLOODSPRAY_ALL);
+	UTIL_BloodSpray(GetAbsOrigin(), Vector(0, 1, 0),
+		BLOOD_COLOR_YELLOW, 4, FX_BLOODSPRAY_ALL);
+	UTIL_BloodSpray(GetAbsOrigin(), Vector(0, -1, 0),
+		BLOOD_COLOR_YELLOW, 4, FX_BLOODSPRAY_ALL);
+	UTIL_BloodSpray(GetAbsOrigin(), Vector(1, 0, 0),
+		BLOOD_COLOR_YELLOW, 4, FX_BLOODSPRAY_ALL);
+	UTIL_BloodSpray(GetAbsOrigin(), Vector(-1, 0, 0),
+		BLOOD_COLOR_YELLOW, 4, FX_BLOODSPRAY_ALL);
+
+	CTakeDamageInfo infoTemp = info;
+	infoTemp.SetDamageType(DMG_REMOVENORAGDOLL);
+
+	BaseClass::Event_Killed( infoTemp );
 }
 
 //-----------------------------------------------------------------------------
@@ -2571,6 +2592,7 @@ void CFastHeadcrab::Spawn( void )
 
 	NPCInit();
 	HeadcrabInit();
+	m_flTimeToLive = 0;
 }
 
 
@@ -2617,6 +2639,13 @@ void CFastHeadcrab::PrescheduleThink( void )
 {
 #if 1 // #IF 0 this to stop the accelrating/decelerating movement.
 #define HEADCRAB_ACCELERATION 0.1
+	if (m_bIsTicking && gpGlobals->curtime > m_flTimeToLive) {
+		CTakeDamageInfo radiusattack_info(this, this, 10.0f, DMG_ACID, 0);
+		RadiusDamage(radiusattack_info, GetAbsOrigin(), 64.0f, CLASS_NONE, NULL);
+
+		CTakeDamageInfo info(this, this, 100.0f, DMG_GENERIC, 0);
+		TakeDamage(info);
+	}
 	if( IsAlive() && GetNavigator()->IsGoalActive() )
 	{
 		switch( m_iRunMode )
@@ -2704,6 +2733,12 @@ void CFastHeadcrab::PrescheduleThink( void )
 //-----------------------------------------------------------------------------
 int	CFastHeadcrab::SelectSchedule( void )
 {
+	if (HasCondition(COND_NEW_ENEMY)) {
+		if (m_bIsTicking == false) {
+			m_bIsTicking = true;
+			m_flTimeToLive = gpGlobals->curtime + HEADCRAB_TIME_TO_LIVE;
+		}
+	}
 	if ( HasSpawnFlags(SF_NPC_WAIT_TILL_SEEN) )
 	{
 		return SCHED_IDLE_STAND;
