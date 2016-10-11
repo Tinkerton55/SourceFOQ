@@ -498,7 +498,7 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 {
 	BaseClass::PrescheduleThink();
 
-	if (m_bShouldExplode == true && gpGlobals->curtime > m_flFireExplosionTime) {
+	if (IsAlive() && m_bShouldExplode == true && gpGlobals->curtime > m_flFireExplosionTime) {
 		FireSystem_StartFire(m_vecExplosionPosition, 192.0f, 0.1f, 0.1f, SF_FIRE_START_FULL, this, FIRE_NATURAL);
 		CTakeDamageInfo info(this, this, 25.0f, DMG_BURN, 0);
 		RadiusDamage(info, m_vecExplosionPosition, 96.0f, CLASS_NONE, NULL);
