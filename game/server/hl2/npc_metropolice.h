@@ -400,6 +400,12 @@ private:
 	CSimpleSimTimer m_BatonSwingTimer;
 	CSimpleSimTimer m_NextChargeTimer;
 
+	float			m_flFireExplosionTime;
+	float			m_flNextFireBurst;
+	bool			m_bShouldExplode;
+	Vector			m_vecExplosionPosition;
+	int				m_nCurrentFlame;
+
 	// All related to burst firing
 	Vector			m_vecBurstTargetPos;
 	Vector			m_vecBurstDelta;

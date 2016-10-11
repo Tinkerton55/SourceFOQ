@@ -14,6 +14,8 @@
 #include "npc_metropolice.h"
 #include "weapon_stunstick.h"
 #include "basegrenade_shared.h"
+#include "EntityFlame.h"
+#include "fire.h"
 #include "ai_route.h"
 #include "hl2_player.h"
 #include "iservervehicle.h"
@@ -57,6 +59,12 @@
 #define	METROPOLICE_MAX_WARNINGS	3
 
 #define	METROPOLICE_BODYGROUP_MANHACK	1
+
+#define METROPOLICE_FIRE_ATTACK_LEAD			1.5f // The vector leading the flame strike forward proportional to player's velocity is divided by this
+#define METROPOLICE_FIRE_EXPLOSION_DELAY		0.75f // Delay before an explosion is created after spawning flame strike
+#define METROPOLICE_FIRE_ATTACK_DELAY			1.0f // Time between two flame strikes
+#define METROPOLICE_FIRE_ATTACK_BREAK			5.0f // Time between two bursts of flame strikes
+#define METROPOLICE_FIRE_ATTACK_MAX_BURST		3 // Number of flame strikes in a burst
 
 enum
 {
@@ -490,6 +498,19 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 {
 	BaseClass::PrescheduleThink();
 
+	if (m_bShouldExplode == true && gpGlobals->curtime > m_flFireExplosionTime) {
+		FireSystem_StartFire(m_vecExplosionPosition, 192.0f, 0.1f, 0.1f, SF_FIRE_START_FULL, this, FIRE_NATURAL);
+		CTakeDamageInfo info(this, this, 25.0f, DMG_BURN, 0);
+		RadiusDamage(info, m_vecExplosionPosition, 96.0f, CLASS_NONE, NULL);
+		m_bShouldExplode = false;
+		//Tinkerton: Play sound!!
+	}
+	if (gpGlobals->curtime > m_flNextFireBurst) {
+		SetCondition(COND_CAN_RANGE_ATTACK1);
+	}
+	else {
+		ClearCondition(COND_CAN_RANGE_ATTACK1);
+	}
 	// Speak any queued sentences
 	m_Sentences.UpdateSentenceQueue();
 
@@ -702,7 +723,8 @@ void CNPC_MetroPolice::Spawn( void )
 	m_flNextLedgeCheckTime = -1.0f;
 	m_nBurstReloadCount = METROPOLICE_BURST_RELOAD_COUNT;
 	SetBurstMode( false );
-
+	m_flFireExplosionTime = 0.0f;
+	m_bShouldExplode = false;
 	// Clear out spawnflag if we're missing the smg1
 	if( HasSpawnFlags( SF_METROPOLICE_ALWAYS_STITCH ) )
 	{
@@ -720,6 +742,9 @@ void CNPC_MetroPolice::Spawn( void )
 	m_vecPreChaseOrigin = vec3_origin;
 	m_flPreChaseYaw = 0;
 
+	m_nCurrentFlame = 1;
+	m_flNextFireBurst = 0.0f;
+
 	SetUse( &CNPC_MetroPolice::PrecriminalUse );
 
 	// Start us with a visible manhack if we have one
@@ -727,6 +752,7 @@ void CNPC_MetroPolice::Spawn( void )
 	{
 		SetBodygroup( METROPOLICE_BODYGROUP_MANHACK, true );
 	}
+	SetModelScale(1.5f);
 }
 
 
@@ -2813,27 +2839,24 @@ void CNPC_MetroPolice::OnAnimEventStartDeployManhack( void )
 //-----------------------------------------------------------------------------
 void CNPC_MetroPolice::OnAnimEventDeployManhack( animevent_t *pEvent )
 {
-	// Let it go
-	ReleaseManhack();
+	trace_t tr;
+	CBaseEntity *pTarget = GetEnemy();
+	Vector vTargetPosition = pTarget->EyePosition();
+	Vector vTargetVelocity = pTarget->GetAbsVelocity();
 
-	Vector forward, right;
-	GetVectors( &forward, &right, NULL );
-
-	IPhysicsObject *pPhysObj = m_hManhack->VPhysicsGetObject();
-
-	if ( pPhysObj )
-	{
-		Vector	yawOff = right * random->RandomFloat( -1.0f, 1.0f );
-
-		Vector	forceVel = ( forward + yawOff * 16.0f ) + Vector( 0, 0, 250 );
-		Vector	forceAng = vec3_origin;
-
-		// Give us velocity
-		pPhysObj->AddVelocity( &forceVel, &forceAng );
+	vTargetPosition += vTargetVelocity / METROPOLICE_FIRE_ATTACK_LEAD;
+	UTIL_TraceLine(vTargetPosition, vTargetPosition + Vector(0, 0, -256), (MASK_SOLID_BRUSHONLY), this, COLLISION_GROUP_NONE, &tr);
+	
+	if ( tr.DidHitWorld() ) {
+		UTIL_DecalTrace(&tr, "Scorch");
+		vTargetPosition = tr.endpos;
+		
+		vTargetPosition.z += 4.0f;
+		m_vecExplosionPosition = vTargetPosition;
+		m_bShouldExplode = true;
 	}
-
-	// Stop dealing with this manhack
-	m_hManhack = NULL;
+	m_flFireExplosionTime = gpGlobals->curtime + METROPOLICE_FIRE_EXPLOSION_DELAY;
+	m_flNextAttack = gpGlobals->curtime + METROPOLICE_FIRE_ATTACK_DELAY;
 }
 
 //-----------------------------------------------------------------------------
@@ -4006,6 +4029,45 @@ void CNPC_MetroPolice::AdministerJustice( void )
 //-----------------------------------------------------------------------------
 int CNPC_MetroPolice::SelectSchedule( void )
 {
+	if (!GetEnemy() && (HasCondition(COND_HEAR_COMBAT) || HasCondition(COND_HEAR_PLAYER) || HasCondition(COND_LIGHT_DAMAGE) || HasCondition(COND_HEAVY_DAMAGE) ) ) {
+		return SCHED_INVESTIGATE_SOUND;
+	}
+	if (HasCondition(COND_NEW_ENEMY)) {
+		return SCHED_ALERT_STAND;
+	}
+	
+	if (HasCondition(COND_CAN_MELEE_ATTACK1)) {
+		return SCHED_MELEE_ATTACK1;
+	}
+
+	if (GetEnemy() != NULL && gpGlobals->curtime > m_flNextFireBurst) {
+		if (gpGlobals->curtime > m_flNextAttack) {
+
+			if (m_nCurrentFlame <= METROPOLICE_FIRE_ATTACK_MAX_BURST) {
+				m_nCurrentFlame++;
+				return SCHED_METROPOLICE_DEPLOY_MANHACK;
+			}
+
+			else {
+				m_flNextFireBurst = gpGlobals->curtime + METROPOLICE_FIRE_ATTACK_BREAK;
+				m_nCurrentFlame = 1;
+				return SCHED_METROPOLICE_CHASE_ENEMY;
+			}
+		}
+
+		else {
+			return SCHED_ALERT_STAND;
+		}
+	}
+
+	//float flDist = GetAbsOrigin().DistTo(GetEnemy()->GetAbsOrigin());
+	//|| flDist > 2048
+	if (GetEnemy() != NULL && (gpGlobals->curtime < m_flNextFireBurst)) {
+		return SCHED_METROPOLICE_CHASE_ENEMY;
+	}
+	else {
+		return SCHED_IDLE_STAND;
+	}
 	if ( !GetEnemy() && HasCondition( COND_IN_PVS ) && AI_GetSinglePlayer() && !AI_GetSinglePlayer()->IsAlive() )
 	{
 		return SCHED_PATROL_WALK;
@@ -5412,6 +5474,7 @@ DEFINE_SCHEDULE
 
 	"	Tasks"
 	"		TASK_SPEAK_SENTENCE					5"	// METROPOLICE_SENTENCE_DEPLOY_MANHACK
+	"		TASK_FACE_ENEMY						0"
 	"		TASK_PLAY_SEQUENCE					ACTIVITY:ACT_METROPOLICE_DEPLOY_MANHACK"
 	"	"
 	"	Interrupts"
