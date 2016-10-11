@@ -47,6 +47,8 @@ class CVortigauntChargeToken;
 
 #define	PLAYER_CRITICAL_HEALTH_PERC			0.15f
 
+#define VORTIGAUNT_BEAM_COOLDOWN			3.0f
+
 #define TLK_SQUISHED_GRUB "TLK_SQUISHED_GRUB" // response rule for vortigaunts when they step on a grub
 
 static const char *VORTIGAUNT_LEFT_CLAW = "leftclaw";
@@ -922,7 +924,8 @@ void CNPC_Vortigaunt::HandleAnimEvent( animevent_t *pEvent )
 		}
 
 		// Stagger the next time we can attack
-		m_flNextAttack = gpGlobals->curtime + random->RandomFloat( 2.0f, 3.0f );
+		//m_flNextAttack = gpGlobals->curtime + random->RandomFloat( 2.0f, 3.0f );
+		m_flNextAttack = gpGlobals->curtime + VORTIGAUNT_BEAM_COOLDOWN;
 		return;
 	}
 	
@@ -1373,6 +1376,7 @@ CBaseEntity *CNPC_Vortigaunt::FindHealTarget( void )
 //-----------------------------------------------------------------------------
 bool CNPC_Vortigaunt::HealBehaviorAvailable( void )
 {
+
 	// Cannot already be healing
 	if ( m_eHealState != HEAL_STATE_NONE )
 		return false;
@@ -1542,6 +1546,8 @@ void CNPC_Vortigaunt::OnScheduleChange( void )
 //------------------------------------------------------------------------------
 int CNPC_Vortigaunt::SelectSchedule( void )
 {
+	return BaseClass::SelectSchedule();
+
 	// Always recharge in this case
 	if ( m_bForceArmorRecharge )
 	{
