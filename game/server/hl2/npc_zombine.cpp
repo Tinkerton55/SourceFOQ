@@ -276,11 +276,22 @@ void CNPC_Zombine::PrescheduleThink( void )
 	//GatherGrenadeConditions();
 
 	if (GetIdealActivity() == ACT_RUN && gpGlobals->curtime > m_flNextBoost) {
-		Vector forward;
-		GetVectors(&forward, NULL, NULL);
-		forward *= 200;
-		ApplyAbsVelocityImpulse(forward);
-		m_flNextBoost = gpGlobals->curtime + 0.25f;
+		Vector vToEnemy = GetEnemy()->GetAbsOrigin() - GetAbsOrigin();
+		VectorNormalize(vToEnemy);
+
+		Vector	vForward;
+		AngleVectors(GetAbsAngles(), &vForward);
+
+		float dotpr = DotProduct(vForward, vToEnemy);
+
+		if (dotpr > 0.0)
+		{
+			Vector forward;
+			GetVectors(&forward, NULL, NULL);
+			forward *= 115;
+			ApplyAbsVelocityImpulse(forward);
+			m_flNextBoost = gpGlobals->curtime + 0.15f;
+		}
 	}
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
