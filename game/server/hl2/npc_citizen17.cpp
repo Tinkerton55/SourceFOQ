@@ -2318,7 +2318,25 @@ int CNPC_Citizen::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 
 	return BaseClass::OnTakeDamage_Alive( newInfo );
 }
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void CNPC_Citizen::Event_Killed(const CTakeDamageInfo &info)
+{
+	Vector vBloodForce = info.GetDamageForce();
 
+	vBloodForce *= -1;
+	VectorNormalize(vBloodForce);
+	QAngle qa(RandomInt(30, 60), RandomInt(30, 60), RandomInt(-15, 60));
+	VectorRotate(vBloodForce, qa, vBloodForce);
+	UTIL_BloodSpray(info.GetDamagePosition(), vBloodForce, BLOOD_COLOR_RED, RandomInt(4, 12), FX_BLOODSPRAY_DROPS);
+
+	vBloodForce = info.GetDamageForce();
+	vBloodForce *= -1;
+	VectorNormalize(vBloodForce);
+
+	UTIL_BloodSpray(info.GetDamagePosition(), vBloodForce, BLOOD_COLOR_RED, RandomInt(4, 12), FX_BLOODSPRAY_DROPS);
+	BaseClass::Event_Killed(info);
+}
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 bool CNPC_Citizen::IsCommandable() 
