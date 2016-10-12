@@ -1092,6 +1092,7 @@ void CAI_BaseNPC::ImpactTrace( trace_t *pTrace, int iDamageType, const char *pCu
 //---------------------------------------------------------
 float CAI_BaseNPC::GetHitgroupDamageMultiplier( int iHitGroup, const CTakeDamageInfo &info )
 {
+	return 0.8f;
 	switch( iHitGroup )
 	{
 	case HITGROUP_GENERIC:
