@@ -105,11 +105,11 @@ IMotionEvent::simresult_e CRollerController::Simulate( IPhysicsMotionController 
 //-----------------------------------------------------------------------------
 
 
-#define ROLLERMINE_IDLE_SEE_DIST					4096
-#define ROLLERMINE_NORMAL_SEE_DIST					4096
+#define ROLLERMINE_IDLE_SEE_DIST					10000
+#define ROLLERMINE_NORMAL_SEE_DIST					10000
 #define ROLLERMINE_WAKEUP_DIST						4096
-#define ROLLERMINE_SEE_VEHICLESONLY_BEYOND_IDLE		300		// See every other than vehicles upto this distance (i.e. old idle see dist)
-#define ROLLERMINE_SEE_VEHICLESONLY_BEYOND_NORMAL	800		// See every other than vehicles upto this distance (i.e. old normal see dist)
+#define ROLLERMINE_SEE_VEHICLESONLY_BEYOND_IDLE		10000	// See every other than vehicles upto this distance (i.e. old idle see dist)
+#define ROLLERMINE_SEE_VEHICLESONLY_BEYOND_NORMAL	10000	// See every other than vehicles upto this distance (i.e. old normal see dist)
 
 #define ROLLERMINE_RETURN_TO_PLAYER_DIST			(200*200)
 #define ROLLERMINE_DETONATE_DIST					(128*128)
@@ -123,7 +123,7 @@ IMotionEvent::simresult_e CRollerController::Simulate( IPhysicsMotionController 
 #define ROLLERMINE_VEHICLE_OPEN_THRESHOLD	400
 #define ROLLERMINE_VEHICLE_HOP_THRESHOLD	300
 
-#define ROLLERMINE_HOP_DELAY				2.5f			// Don't allow hops faster than this
+#define ROLLERMINE_HOP_DELAY				1.0f			// Don't allow hops faster than this
 
 //#define ROLLERMINE_REQUIRED_TO_EXPLODE_VEHICLE		4
 
@@ -180,7 +180,7 @@ class CNPC_RollerMine : public CNPCBaseInteractive<CAI_BaseNPC>, public CDefault
 
 public:
 
-	CNPC_RollerMine( void ) { m_bTurnedOn = true; m_bUniformSight = false; }
+	CNPC_RollerMine( void ) { m_bTurnedOn = true; m_bUniformSight = true; }
 	~CNPC_RollerMine( void );
 
 	void	Spawn( void );
@@ -1308,9 +1308,9 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 		// Start turning early
 		if( (GetLocalOrigin() - GetNavigator()->GetCurWaypointPos() ).Length() <= 64 )
 		{
-			//if( GetNavigator()->CurWaypointIsGoal() )
-			CBaseEntity *pTarget = GetEnemy();
-			if (GetAbsOrigin().DistToSqr(pTarget->GetAbsOrigin()) < ROLLERMINE_DETONATE_DIST * 2)
+			if( GetNavigator()->CurWaypointIsGoal() )
+			//CBaseEntity *pTarget = GetEnemy();
+			//if (GetAbsOrigin().DistToSqr(pTarget->GetAbsOrigin()) < ROLLERMINE_DETONATE_DIST * 2)
 			{
 				// Hit the brakes a bit.
 				float yaw = UTIL_VecToYaw( GetNavigator()->GetCurWaypointPos() - GetLocalOrigin() );
@@ -1355,9 +1355,8 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 
 			m_RollerController.m_vecAngular = vec3_origin;
 
-			if( flDot > 0.25 && flDot < 0.75 )
+			if( flDot > 0.25 && flDot < 0.5 )
 			{
-				m_bDisableHopping = true;
 				// Feed a little torque backwards into the axis perpendicular to the velocity.
 				// This will help get rid of momentum that would otherwise make us overshoot our goal.
 				Vector vecCompensate;
@@ -1366,10 +1365,7 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 				vecCompensate.y = -vecVelocity.x;
 				vecCompensate.z = 0;
 
-				m_RollerController.m_vecAngular = WorldToLocalRotation( SetupMatrixAngles(GetLocalAngles()), vecCompensate, m_flForwardSpeed * -1.5f );
-			}
-			else {
-				m_bDisableHopping = false;
+				m_RollerController.m_vecAngular = WorldToLocalRotation( SetupMatrixAngles(GetLocalAngles()), vecCompensate, m_flForwardSpeed * -2.0f );
 			}
 
 			if( m_bHackedByAlyx )
@@ -1379,7 +1375,7 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 			}
 			else
 			{
-				m_RollerController.m_vecAngular += WorldToLocalRotation(SetupMatrixAngles(GetLocalAngles()), vecRight, m_flForwardSpeed * 8.0f);
+				m_RollerController.m_vecAngular += WorldToLocalRotation(SetupMatrixAngles(GetLocalAngles()), vecRight, m_flForwardSpeed * 6.0f);
 			}
 		}
 		break;
@@ -1539,7 +1535,7 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 					// Keep trying to hop when we're ramming a vehicle, so we're visible to the player
 					if ( vecVelocity.x != 0 && vecVelocity.y != 0 && flTorqueFactor > 3 && flDot > 0.0 )
 					{
-						Hop( 300 );
+						Hop(300);
 					}
 				}
 			}
@@ -1699,7 +1695,7 @@ void CNPC_RollerMine::Open( void )
 			}
 			else if ( !GetEnemy() || GetEnemy()->Classify() != CLASS_BULLSEYE )		// Don't hop when attacking bullseyes
 			{
-				Hop( 128 );
+					Hop(128);
 			}
 		}
 	}
@@ -2480,7 +2476,7 @@ int CNPC_RollerMine::OnTakeDamage( const CTakeDamageInfo &info )
 			// dazed
 			m_RollerController.m_vecAngular.Init();
 			m_flActiveTime = gpGlobals->curtime + GetStunDelay();
-			Hop( 300 );
+			Hop(300);
 		}
 	}
 
@@ -2492,30 +2488,33 @@ int CNPC_RollerMine::OnTakeDamage( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CNPC_RollerMine::Hop( float height )
 {
-	if (m_flNextHop > gpGlobals->curtime || !(GetFlags() & FL_ONGROUND))
-		return;
+	//if (m_bDisableHopping == false) {
+		//if (m_flNextHop > gpGlobals->curtime || !(GetFlags() & FL_ONGROUND))
+	if (m_flNextHop > gpGlobals->curtime)
+			return;
 
-	if ( GetMoveType() == MOVETYPE_VPHYSICS )
-	{
-		CBaseEntity *pTarget = GetEnemy();
-		IPhysicsObject *pPhysObj = VPhysicsGetObject();
-		pPhysObj->ApplyForceCenter( Vector(0,0,1) * height * pPhysObj->GetMass() );
+		if (GetMoveType() == MOVETYPE_VPHYSICS)
+		{
+			CBaseEntity *pTarget = GetEnemy();
+			IPhysicsObject *pPhysObj = VPhysicsGetObject();
+			pPhysObj->ApplyForceCenter(Vector(0, 0, 1) * height * pPhysObj->GetMass());
 
-		AngularImpulse	angVel;
-		angVel.Random( -400.0f, 400.0f );
-		pPhysObj->AddVelocity( NULL, &angVel );
+			//AngularImpulse	angVel;
+			//angVel.Random(-400.0f, 400.0f);
+			//pPhysObj->AddVelocity(NULL, &angVel);
 
-		if (pTarget) {
-			Vector vBoostDir = GetAbsOrigin() - pTarget->EyePosition();
-			VectorNormalize(vBoostDir);
-			vBoostDir *= -500.0f;
-			//pPhysObj->AddVelocity(&vBoostDir, NULL);
-			ApplyAbsVelocityImpulse(vBoostDir);
+			if (pTarget) {
+				Vector vBoostDir = pTarget->GetAbsOrigin() - GetAbsOrigin();
+				VectorNormalize(vBoostDir);
+				vBoostDir *= 300.0f;
+				//pPhysObj->AddVelocity(&vBoostDir, NULL);
+				ApplyAbsVelocityImpulse(vBoostDir);
+			}
+
+
+			m_flNextHop = gpGlobals->curtime + ROLLERMINE_HOP_DELAY;
 		}
-
-
-		m_flNextHop = gpGlobals->curtime + ROLLERMINE_HOP_DELAY;
-	}
+	//}
 }
 
 //-----------------------------------------------------------------------------
@@ -2636,9 +2635,8 @@ void CNPC_RollerMine::PrescheduleThink()
 	if (GetAbsOrigin().DistToSqr(pPlayer->GetAbsOrigin()) < ROLLERMINE_DETONATE_DIST * 2) {
 		Hop(128);
 	}
-	else if (!m_bDisableHopping) {
-		Hop(64);
-	}
+	Hop(64);
+	
 	if (m_bPowerDown) {
 		if (gpGlobals->curtime > m_flDetonateTime) {
 			Explode();
