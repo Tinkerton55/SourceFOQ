@@ -584,8 +584,9 @@ void CAI_BaseNPC::Event_Killed( const CTakeDamageInfo &info )
 
 	Wake( false );
 	
+	//Tinkerton: We want ragdolls flying around instead of dropping realistically
 	//Adrian: Select a death pose to extrapolate the ragdoll's velocity.
-	SelectDeathPose( info );
+	//SelectDeathPose( info );
 
 	m_lifeState = LIFE_DYING;
 
@@ -1198,6 +1199,15 @@ void CAI_BaseNPC::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir
 			m_fNoDamageDecal = true;
 		}
 	}
+
+	//Tinkerton: Used to get ragdolls flying all over the place
+	
+	Vector vDamageForce = subInfo.GetDamageForce();
+	if (vDamageForce.z >= -32.0f) {
+		vDamageForce.z += RandomFloat(96.0f, 128.0f);
+	}
+	subInfo.SetDamageForce(vDamageForce);
+	subInfo.ScaleDamageForce(2.0f);
 
 	// Airboat gun will impart major force if it's about to kill him....
 	if ( info.GetDamageType() & DMG_AIRBOAT )
