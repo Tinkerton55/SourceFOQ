@@ -207,6 +207,9 @@ public:
 	float	m_flPauseTime;
 	Vector	m_vecJumpVel;
 
+	bool	m_bIsTicking;
+	float	m_flTimeToLive;
+
 	void	BiteSound( void );
 	void	PainSound( const CTakeDamageInfo &info );
 	void	DeathSound( const CTakeDamageInfo &info );
