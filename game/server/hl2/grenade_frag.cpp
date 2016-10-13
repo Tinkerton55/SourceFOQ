@@ -371,11 +371,11 @@ void CGrenadeFrag::VPhysicsUpdate( IPhysicsObject *pPhysics )
 	trace_t tr;
 
 	// UNDONE: Hull won't work with hitboxes - hits outer hull.  But the whole point of this test is to hit hitboxes.
-#if 0
+//#if 0
 	UTIL_TraceHull( start, start + vel * gpGlobals->frametime, CollisionProp()->OBBMins(), CollisionProp()->OBBMaxs(), CONTENTS_HITBOX|CONTENTS_MONSTER|CONTENTS_SOLID, &filter, &tr );
-#else
-	UTIL_TraceLine( start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX|CONTENTS_MONSTER|CONTENTS_SOLID, &filter, &tr );
-#endif
+//#else
+	//UTIL_TraceLine( start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX|CONTENTS_MONSTER|CONTENTS_SOLID, &filter, &tr );
+//#endif
 	if ( tr.startsolid )
 	{
 		if ( !m_inSolid )
@@ -389,22 +389,22 @@ void CGrenadeFrag::VPhysicsUpdate( IPhysicsObject *pPhysics )
 		return;
 	}
 	m_inSolid = false;
-	if ( tr.DidHit() )
+	if (tr.DidHit())
 	{
 		m_flDetonateTime = gpGlobals->curtime;
 		Vector dir = vel;
 		VectorNormalize(dir);
 		// send a tiny amount of damage so the character will react to getting bonked
-		CTakeDamageInfo info( this, GetThrower(), pPhysics->GetMass() * vel, GetAbsOrigin(), 0.1f, DMG_CRUSH );
-		tr.m_pEnt->TakeDamage( info );
+		CTakeDamageInfo info(this, GetThrower(), pPhysics->GetMass() * vel, GetAbsOrigin(), 0.1f, DMG_CRUSH);
+		tr.m_pEnt->TakeDamage(info);
 
 		// reflect velocity around normal
-		vel = -2.0f * tr.plane.normal * DotProduct(vel,tr.plane.normal) + vel;
-		
+		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
+
 		// absorb 80% in impact
 		vel *= GRENADE_COEFFICIENT_OF_RESTITUTION;
 		angVel *= -0.5f;
-		pPhysics->SetVelocity( &vel, &angVel );
+		pPhysics->SetVelocity(&vel, &angVel);
 	}
 }
 
