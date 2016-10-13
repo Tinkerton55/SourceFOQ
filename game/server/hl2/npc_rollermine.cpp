@@ -352,6 +352,7 @@ protected:
 
 	bool	m_bTurnedOn;
 	bool	m_bUniformSight;
+	bool	m_bIsHit;
 
 	bool	m_bDisableHopping;
 
@@ -607,6 +608,7 @@ void CNPC_RollerMine::Spawn( void )
 	m_flPowerDownDetonateTime = 0.0f;
 	m_bPowerDown = false;
 	m_flPowerDownTime = 0.0f;
+	m_bIsHit = false;
 
 	//Set their yaw speed to 0 so the motor doesn't rotate them.
 	GetMotor()->SetYawSpeed( 0.0f );
@@ -1518,10 +1520,10 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 			}
 
 			// Open the spikes if i'm close enough to cut the enemy!!
-  			if( ( m_bIsOpen == false ) && ( ( UTIL_DistApprox( GetAbsOrigin(), GetEnemy()->GetAbsOrigin() ) <= flThreshold ) || !IsActive() ) )
-			{
-				Open();
-			}
+  	//		if( ( m_bIsOpen == false ) && ( ( UTIL_DistApprox( GetAbsOrigin(), GetEnemy()->GetAbsOrigin() ) <= flThreshold ) || !IsActive() ) )
+			//{
+			//	Open();
+			//}
 			else if ( m_bIsOpen )
 			{
 				float flDistance = UTIL_DistApprox( GetAbsOrigin(), GetEnemy()->GetAbsOrigin() );
@@ -1547,10 +1549,10 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 				{
 					if( gpGlobals->curtime - m_flChargeTime > 1.0 && flTorqueFactor > 1 &&  flDot < 0.0 )
 					{
-						if( m_bIsOpen )
-						{
-							Close();
-						}
+						//if( m_bIsOpen )
+						//{
+							//Close();
+						//}
 
 						TaskComplete();
 					}
@@ -1639,14 +1641,14 @@ void CNPC_RollerMine::RunTask( const Task_t *pTask )
 
 				CSoundEnt::InsertSound ( SOUND_DANGER, GetAbsOrigin(), 400, 0.5f, this );
 
-				if ( m_bIsOpen == false )
-				{
-					Open();
-				}
-				else
-				{
-					Close();
-				}
+				//if ( m_bIsOpen == false )
+				//{
+				//	Open();
+				//}
+				//else
+				//{
+				//	Close();
+				//}
 			}
 
 			if ( m_flPowerDownDetonateTime <= gpGlobals->curtime )
@@ -1713,14 +1715,14 @@ void CNPC_RollerMine::SetRollerSkin( void )
 		m_nSkin = (int)ROLLER_SKIN_DETONATE;
 		
 	}
-	else //if ( m_bHackedByAlyx == true )
+	else if ( m_bIsHit == true )
 	{
 		m_nSkin = (int)ROLLER_SKIN_FRIENDLY;
 	}
-	//else
-	//{
-		//m_nSkin = (int)ROLLER_SKIN_REGULAR;
-	//}
+	else
+	{
+		m_nSkin = (int)ROLLER_SKIN_REGULAR;
+	}
 }
 
 
@@ -1739,7 +1741,7 @@ void CNPC_RollerMine::Close( void )
 	{
 		SetModel( "models/roller.mdl" );
 
-		SetRollerSkin();
+		//SetRollerSkin();
 
 		SetTouch( NULL );
 		m_bIsOpen = false;
@@ -1805,7 +1807,7 @@ void CNPC_RollerMine::CloseTouch( CBaseEntity *pOther )
 		}
 	}
 
-	//Close();
+	Close();
 }
 
 //-----------------------------------------------------------------------------
@@ -1959,7 +1961,7 @@ void CNPC_RollerMine::NotifyInteraction( CAI_BaseNPC *pUser )
 {
 	// For now, turn green so we can tell who is hacked.
 	m_bHackedByAlyx = true; 
-	SetRollerSkin();
+	//SetRollerSkin();
 	GetEnemies()->SetFreeKnowledgeDuration( 30.0f );
 
 	// Play the hax0red sound
@@ -1967,7 +1969,7 @@ void CNPC_RollerMine::NotifyInteraction( CAI_BaseNPC *pUser )
 
 	// Force the rollermine open here. At very least, this ensures that the 
 	// correct, smaller bounding box is recomputed around it.
-	Open();
+	//Open();
 }
 
 //-----------------------------------------------------------------------------
@@ -2464,20 +2466,28 @@ int CNPC_RollerMine::OnTakeDamage( const CTakeDamageInfo &info )
 		SetCondition( COND_LIGHT_DAMAGE );
 	}
 
-	if ( info.GetDamageType() & (DMG_BURN|DMG_BLAST) )
-	{
-		if ( info.GetAttacker() && info.GetAttacker()->m_iClassname != m_iClassname )
-		{
-			SetThink( &CNPC_RollerMine::PreDetonate );
-			SetNextThink( gpGlobals->curtime + random->RandomFloat( 0.1f, 0.5f ) );
-		}
-		else
-		{
-			// dazed
-			m_RollerController.m_vecAngular.Init();
-			m_flActiveTime = gpGlobals->curtime + GetStunDelay();
-			Hop(300);
-		}
+	//if ( info.GetDamageType() & (DMG_BURN|DMG_BLAST) )
+	//{
+	//	if ( info.GetAttacker() && info.GetAttacker()->m_iClassname != m_iClassname )
+	//	{
+	//		SetThink( &CNPC_RollerMine::PreDetonate );
+	//		SetNextThink( gpGlobals->curtime + random->RandomFloat( 0.1f, 0.5f ) );
+	//	}
+	//	else
+	//	{
+	//		// dazed
+	//		m_RollerController.m_vecAngular.Init();
+	//		m_flActiveTime = gpGlobals->curtime + GetStunDelay();
+	//		Hop(300);
+	//	}
+	//}
+	if (m_bIsHit == false) {
+		m_bIsHit = true;
+		SetRollerSkin();
+	}
+	else {
+		m_bPowerDown = true;
+		m_flDetonateTime = gpGlobals->curtime + ROLLERMINE_DETONATE_TIME;
 	}
 
 	return 0;
@@ -2646,8 +2656,8 @@ void CNPC_RollerMine::PrescheduleThink()
 
 		if (!m_bPowerDown) {
 			m_bPowerDown = true;
-			m_flDetonateTime = gpGlobals->curtime + ROLLERMINE_DETONATE_TIME;
 			SetRollerSkin();
+			m_flDetonateTime = gpGlobals->curtime + ROLLERMINE_DETONATE_TIME;
 			Vector vNegativeVelocity;
 			GetVelocity(&vNegativeVelocity, NULL);
 			vNegativeVelocity *= -0.8f;
