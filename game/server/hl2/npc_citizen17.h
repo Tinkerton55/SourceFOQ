@@ -161,6 +161,7 @@ public:
 	// Damage handling
 	//---------------------------------
 	int 			OnTakeDamage_Alive( const CTakeDamageInfo &info );
+	void			CNPC_Citizen::Event_Killed(const CTakeDamageInfo &info);
 	
 	//---------------------------------
 	// Commander mode
