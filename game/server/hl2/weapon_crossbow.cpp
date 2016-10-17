@@ -478,6 +478,7 @@ private:
 
 	bool				m_bInZoom;
 	bool				m_bMustReload;
+	bool				m_bWhichBarrel;
 };
 
 LINK_ENTITY_TO_CLASS( weapon_crossbow, CWeaponCrossbow );
@@ -639,7 +640,7 @@ void CWeaponCrossbow::FireBolt( void )
 		//{
 			WeaponSound( EMPTY );
 			//m_flNextPrimaryAttack = 0.15;
-			m_flNextPrimaryAttack = 4.0;
+			m_flNextPrimaryAttack = 3.0;
 		//}
 
 		return;
@@ -656,7 +657,9 @@ void CWeaponCrossbow::FireBolt( void )
 	Vector vecSrc		= pOwner->Weapon_ShootPosition();
 
 	QAngle angAiming;
+
 	VectorAngles( vecAiming, angAiming );
+
 
 #if defined(HL2_EPISODIC)
 	// !!!HACK - the other piece of the Alyx crossbow bolt hack for Outland_10 (see ::BoltTouch() for more detail)
@@ -674,6 +677,16 @@ void CWeaponCrossbow::FireBolt( void )
 		}
 	}
 #endif
+	vecSrc.x += 13.0f;
+	vecSrc.z -= 16.0f;
+	if (m_bWhichBarrel) {
+		m_bWhichBarrel = false;
+		vecSrc.x += 4.0f;
+	}
+	else {
+		m_bWhichBarrel = true;
+		vecSrc.x -= 4.0f;
+	}
 
 	CCrossbowBolt *pBolt = CCrossbowBolt::BoltCreate( vecSrc, angAiming, pOwner );
 
@@ -688,7 +701,7 @@ void CWeaponCrossbow::FireBolt( void )
 
 	m_iClip1--;
 
-	pOwner->ViewPunch( QAngle( -2, 0, 0 ) );
+	//pOwner->ViewPunch( QAngle( -2, 0, 0 ) );
 
 	WeaponSound( SINGLE );
 	WeaponSound( SPECIAL2 );
