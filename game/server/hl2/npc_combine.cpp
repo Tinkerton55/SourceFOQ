@@ -39,7 +39,7 @@ int g_fCombineQuestion;				// true if an idle grunt asked a question. Cleared wh
 #define COMBINE_SKIN_SHOTGUNNER		1
 
 
-#define COMBINE_GRENADE_THROW_SPEED 1024
+#define COMBINE_GRENADE_THROW_SPEED 768
 #define COMBINE_GRENADE_TIMER		3.5
 #define COMBINE_GRENADE_FLUSH_TIME	3.0		// Don't try to flush an enemy who has been out of sight for longer than this.
 #define COMBINE_GRENADE_FLUSH_DIST	256.0	// Don't try to flush an enemy who has moved farther than this distance from the last place I saw him.
@@ -2424,8 +2424,18 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 				else
 				{
 					if (GetEnemy() != NULL) {
-						Vector up, vecThrow;
+
+						Vector forward, up, vecThrow;
+						GetVectors(&forward, NULL, &up);
+
 						CBaseEntity *pTarget = GetEnemy();
+
+						//Tinkerton: Calculate throw vector
+						Vector vEnemyPos = pTarget->EyePosition();
+						vEnemyPos.z -= 32.0f;
+						vecThrow = GetAbsOrigin() - vEnemyPos;
+						VectorNormalize(vecThrow);
+						vecThrow *= -COMBINE_GRENADE_THROW_SPEED;
 
 						//Tinkerton: Arc the shot upwards the further the player is
 						vec_t vTargetDist = GetAbsOrigin().DistTo(pTarget->GetAbsOrigin());
@@ -2433,17 +2443,18 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 						if (flTargetDistFraction > 1.0f) {
 							flTargetDistFraction = 1.0f;
 						}
-						GetVectors(NULL, NULL, &up);
 						up *= flTargetDistFraction * 256.0f;
-
-						//Tinkerton: Calculate throw vector
-						Vector vEnemyPos = pTarget->GetAbsOrigin();
-						vecThrow = GetAbsOrigin() - vEnemyPos;
-						VectorNormalize(vecThrow);
-						vecThrow *= -COMBINE_GRENADE_THROW_SPEED;
 
 						//Tinkerton: Add arc
 						vecThrow += up;
+
+						//Tinkerton: Remove the arc if there is world geometry in the grenade's way
+						trace_t tr;
+						AI_TraceLine(EyePosition(), EyePosition() + vecThrow, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+						if (tr.DidHitWorld()) {
+							vecThrow -= up;
+						}
+
 						Fraggrenade_Create(vecStart, vec3_angle, vecThrow, vecSpin, this, COMBINE_GRENADE_TIMER, true);
 					}
 				}
