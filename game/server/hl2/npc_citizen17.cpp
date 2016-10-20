@@ -1014,6 +1014,13 @@ void CNPC_Citizen::PrescheduleThink()
 {
 	BaseClass::PrescheduleThink();
 
+	if (gpGlobals->curtime >= m_flNextAttack) {
+		SetCondition(COND_CAN_RANGE_ATTACK2);
+	}
+	else {
+		ClearCondition(COND_CAN_RANGE_ATTACK2);
+	}
+
 	UpdatePlayerSquad();
 	UpdateFollowCommandPoint();
 
@@ -1173,18 +1180,19 @@ int CNPC_Citizen::SelectSchedule()
 		SentenceStop();
 		EmitSound("NPC_Citizen.Die");
 		//Tinkerton: Should run around before attacking first
-		m_flNextAttack = gpGlobals->curtime + 1;
+		m_flNextAttack = gpGlobals->curtime + 1.0f;
 		return SCHED_GRUNT_CHASE;
 	}
 	if (!GetEnemy()) {
 		return SCHED_IDLE_STAND;
 	}
-	if (gpGlobals->curtime < m_flNextAttack) {
-		return SCHED_GRUNT_CHASE;
-	}
-	else {
+	if (gpGlobals->curtime >= m_flNextAttack && HasCondition(COND_SEE_ENEMY)) {
+		AimGun();
 		m_flNextAttack = gpGlobals->curtime + 4.0f;
 		return SCHED_GRUNT_ATTACK;
+	}
+	else {
+		return SCHED_GRUNT_CHASE;
 	}
 
 	// If we can't move, we're on a train, and should be sitting.
@@ -3950,16 +3958,16 @@ AI_BEGIN_CUSTOM_NPC( npc_citizen, CNPC_Citizen )
 		"		TASK_GET_FLANK_RADIUS_PATH_TO_ENEMY_LOS 0"
 		"		TASK_RUN_PATH					0"
 		"		TASK_WAIT_FOR_MOVEMENT			0"
-		"		TASK_SET_SCHEDULE				SCHEDULE:SCHED_GRUNT_ATTACK"
 		"	"
 		"	Interrupts"
+		"		COND_CAN_RANGE_ATTACK2			"
 		)
 	DEFINE_SCHEDULE
 		(
 		SCHED_GRUNT_ATTACK,
 
 		"	Tasks"
-		"		TASK_STOP_MOVING				0"
+		"		TASK_STOP_MOVING				1"
 		"		TASK_FACE_ENEMY					0"
 		"		TASK_PLAY_SEQUENCE				ACTIVITY:ACT_RANGE_ATTACK1"
 		"		TASK_SELECT_SCHEDULE			0"
