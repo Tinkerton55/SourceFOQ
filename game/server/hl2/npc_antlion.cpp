@@ -2305,20 +2305,20 @@ int CNPC_Antlion::SelectSchedule( void )
 		return SCHED_MOVE_AWAY;
 
 	//Flipped?
-	if ( HasCondition( COND_ANTLION_FLIPPED ) )
-	{
-		ClearCondition( COND_ANTLION_FLIPPED );
-		
-		// See if it's a forced, electrical flip
-		if ( m_flZapDuration > gpGlobals->curtime )
-		{
-			SetContextThink( &CNPC_Antlion::ZapThink, gpGlobals->curtime, "ZapThink" );
-			return SCHED_ANTLION_ZAP_FLIP;
-		}
+	//if ( HasCondition( COND_ANTLION_FLIPPED ) )
+	//{
+	//	ClearCondition( COND_ANTLION_FLIPPED );
+	//	
+	//	// See if it's a forced, electrical flip
+	//	if ( m_flZapDuration > gpGlobals->curtime )
+	//	{
+	//		SetContextThink( &CNPC_Antlion::ZapThink, gpGlobals->curtime, "ZapThink" );
+	//		return SCHED_ANTLION_ZAP_FLIP;
+	//	}
 
-		// Regular flip
-		return SCHED_ANTLION_FLIP;
-	}
+	//	// Regular flip
+	//	return SCHED_ANTLION_FLIP;
+	//}
 
 	if( HasCondition( COND_ANTLION_IN_WATER ) )
 	{
