@@ -518,7 +518,7 @@ void CNPC_Citizen::Spawn()
 	}
 
 	m_flTimePlayerStare = FLT_MAX;
-	m_flNextAttack = gpGlobals->curtime + 4.0f;
+	m_flNextAttack = gpGlobals->curtime + 2.0f;
 
 	AddEFlags( EFL_NO_DISSOLVE | EFL_NO_MEGAPHYSCANNON_RAGDOLL | EFL_NO_PHYSCANNON_INTERACTION );
 
@@ -1014,13 +1014,6 @@ void CNPC_Citizen::PrescheduleThink()
 {
 	BaseClass::PrescheduleThink();
 
-	if (gpGlobals->curtime >= m_flNextAttack) {
-		SetCondition(COND_CAN_RANGE_ATTACK2);
-	}
-	else {
-		ClearCondition(COND_CAN_RANGE_ATTACK2);
-	}
-
 	UpdatePlayerSquad();
 	UpdateFollowCommandPoint();
 
@@ -1186,9 +1179,8 @@ int CNPC_Citizen::SelectSchedule()
 	if (!GetEnemy()) {
 		return SCHED_IDLE_STAND;
 	}
-	if (gpGlobals->curtime >= m_flNextAttack && HasCondition(COND_SEE_ENEMY)) {
-		AimGun();
-		m_flNextAttack = gpGlobals->curtime + 4.0f;
+	if (gpGlobals->curtime > m_flNextAttack) {
+		m_flNextAttack = gpGlobals->curtime + 2.0f;
 		return SCHED_GRUNT_ATTACK;
 	}
 	else {
@@ -3960,19 +3952,19 @@ AI_BEGIN_CUSTOM_NPC( npc_citizen, CNPC_Citizen )
 		"		TASK_WAIT_FOR_MOVEMENT			0"
 		"	"
 		"	Interrupts"
-		"		COND_CAN_RANGE_ATTACK2			"
 		)
 	DEFINE_SCHEDULE
 		(
 		SCHED_GRUNT_ATTACK,
 
 		"	Tasks"
-		"		TASK_STOP_MOVING				1"
+		"		TASK_STOP_MOVING				0"
 		"		TASK_FACE_ENEMY					0"
 		"		TASK_PLAY_SEQUENCE				ACTIVITY:ACT_RANGE_ATTACK1"
 		"		TASK_SELECT_SCHEDULE			0"
 		"	"
 		"	Interrupts"
+		"		COND_ENEMY_OCCLUDED				"
 		)
 	DEFINE_SCHEDULE
 	(
