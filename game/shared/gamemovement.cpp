@@ -3938,11 +3938,13 @@ void CGameMovement::CheckFalling( void )
 		if (flFallVelocityFraction > 1.0f) {
 			flFallVelocityFraction = 1.0f;
 		}
-		float flFallShakeAmplitude = flFallVelocityFraction * 10;
-		float flFallShakeFrequency = flFallVelocityFraction * 10.0f;
+		float flFallShakeAmplitude = flFallVelocityFraction * 15;
+		float flFallShakeFrequency = flFallVelocityFraction * 5.0f;
 		float flFallShakeDuration = flFallVelocityFraction * 0.5f;
 		
 		UTIL_ScreenShake(player->GetAbsOrigin(), flFallShakeAmplitude, flFallShakeFrequency, flFallShakeDuration, 750.0f, SHAKE_START);
+		QAngle angPunch(flFallVelocityFraction * 10.0f, 0, 0);
+		player->ViewPunch(angPunch);
 	}
 	//
 	// Clear the fall velocity so the impact doesn't happen again.
