@@ -1693,6 +1693,21 @@ void CBasePlayer::Event_Killed( const CTakeDamageInfo &info )
 
 	if ( !IsObserver() )
 	{
+		//Tinkerton: Snap eye angles to our killer (a sort of killcam)
+		QAngle angEyeSnap;
+		Vector vecEnemyDelta, vecEnemyPos, vecImpactForce;
+		vecEnemyPos = info.GetAttacker()->EyePosition();
+
+		vecEnemyDelta = vecEnemyPos - EyePosition();
+		VectorAngles(vecEnemyDelta, angEyeSnap);
+		SnapEyeAngles(angEyeSnap);
+
+		//Tinkerton: Add force ala NPC ragdolls to make the player fly around a bit
+		vecImpactForce = info.GetDamageForce();
+		VectorNormalize(vecImpactForce);
+		ApplyAbsVelocityImpulse( vecImpactForce);
+
+		SetThink(&CBasePlayer::PlayerDeathThink);
 		SetViewOffset( VEC_DEAD_VIEWHEIGHT_SCALED( this ) );
 	}
 	m_lifeState		= LIFE_DYING;
@@ -1747,8 +1762,7 @@ void CBasePlayer::Event_Dying( const CTakeDamageInfo& info )
 	
 	SetLocalAngles( angles );
 
-	SetThink(&CBasePlayer::PlayerDeathThink);
-	SetNextThink( gpGlobals->curtime + 0.1f );
+	SetNextThink(gpGlobals->curtime + 0.1f);
 	BaseClass::Event_Dying( info );
 }
 
@@ -2072,7 +2086,7 @@ void CBasePlayer::PlayerDeathThink(void)
 {
 	float flForward;
 
-	SetNextThink( gpGlobals->curtime + 0.1f );
+	SetNextThink( gpGlobals->curtime );
 
 	if (GetFlags() & FL_ONGROUND)
 	{
