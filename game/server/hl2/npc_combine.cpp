@@ -2430,16 +2430,30 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 
 						CBaseEntity *pTarget = GetEnemy();
 
+						//Tinkerton: Calculate X/Y distance from player
+						Vector vecEnemy2D, vecPos2D;
+						vecEnemy2D = pTarget->GetAbsOrigin();
+						vecEnemy2D.z = 0.0f;
+						vecPos2D = GetAbsOrigin();
+						vecPos2D.z = 0.0f;
+						vec_t vecTargetDist = vecPos2D.DistTo(vecEnemy2D);
+						Vector vecEnemyPos = pTarget->GetAbsOrigin();
+
 						//Tinkerton: Calculate throw vector
-						Vector vEnemyPos = pTarget->EyePosition();
-						vEnemyPos.z -= 32.0f;
-						vecThrow = GetAbsOrigin() - vEnemyPos;
+						if (vecTargetDist > 96.0f || vecEnemyPos.z > GetAbsOrigin().z) {
+							vecEnemyPos = pTarget->EyePosition();
+							vecEnemyPos.z -= 32.0f;
+						}
+						//Tinkerton: If the player is too close and below us, grenades will fly over his head when using EyePosition, so we use AbsOrigin instead
+						else {
+							vecEnemyPos = pTarget->GetAbsOrigin();
+						}
+						vecThrow = GetAbsOrigin() - vecEnemyPos;
 						VectorNormalize(vecThrow);
 						vecThrow *= -COMBINE_GRENADE_THROW_SPEED;
 
 						//Tinkerton: Arc the shot upwards the further the player is
-						vec_t vTargetDist = GetAbsOrigin().DistTo(pTarget->GetAbsOrigin());
-						float flTargetDistFraction = vTargetDist / COMBINE_GRENADE_THROW_SPEED;
+						float flTargetDistFraction = vecTargetDist / COMBINE_GRENADE_THROW_SPEED;
 						if (flTargetDistFraction > 1.0f) {
 							flTargetDistFraction = 1.0f;
 						}
@@ -2448,7 +2462,7 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 						//Tinkerton: Add arc
 						vecThrow += up;
 
-						//Tinkerton: Remove the arc if there is world geometry in the grenade's way
+						//Tinkerton: Remove the arc if there is world geometry in the grenade's way, or the player is below us
 						trace_t tr;
 						AI_TraceLine(EyePosition(), EyePosition() + vecThrow, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
 						if (tr.DidHitWorld()) {
