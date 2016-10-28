@@ -253,6 +253,9 @@ void CNPC_Zombine::Precache( void )
 	PrecacheScriptSound( "Zombine.Idle" );
 	PrecacheScriptSound( "Zombine.ReadyGrenade" );
 
+	//Tinkerton: The other sounds don't work, so we use this as a placeholder for the alert bark
+	PrecacheScriptSound("Zombie.Die");
+
 	PrecacheScriptSound( "ATV_engine_null" );
 	PrecacheScriptSound( "Zombine.Charge" );
 	PrecacheScriptSound( "Zombie.Attack" );
@@ -275,7 +278,7 @@ void CNPC_Zombine::PrescheduleThink( void )
 	m_flNextFlinchTime = gpGlobals->curtime + 999;
 	//GatherGrenadeConditions();
 
-	if (GetIdealActivity() == ACT_RUN && gpGlobals->curtime > m_flNextBoost) {
+	if (GetIdealActivity() == ACT_RUN && gpGlobals->curtime > m_flNextBoost && GetEnemy() != NULL) {
 		Vector vToEnemy = GetEnemy()->GetAbsOrigin() - GetAbsOrigin();
 		VectorNormalize(vToEnemy);
 
@@ -283,8 +286,8 @@ void CNPC_Zombine::PrescheduleThink( void )
 		AngleVectors(GetAbsAngles(), &vForward);
 
 		float dotpr = DotProduct(vForward, vToEnemy);
-
-		if (dotpr > 0.0)
+		float flDist = EnemyDistance(GetEnemy());
+		if (dotpr > 0.0 && flDist > 96.0f)
 		{
 			Vector forward;
 			GetVectors(&forward, NULL, NULL);
@@ -874,7 +877,8 @@ void CNPC_Zombine::DeathSound( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CNPC_Zombine::AlertSound( void )
 {
-	EmitSound( "Zombine.Alert" );
+	//EmitSound( "Zombine.Alert" );
+	EmitSound("Zombie.Die");
 
 	// Don't let a moan sound cut off the alert sound.
 	m_flNextMoanSound += random->RandomFloat( 2.0, 4.0 );
