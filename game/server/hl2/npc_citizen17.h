@@ -307,6 +307,7 @@ private:
 	bool			m_bWasInPlayerSquad;
 	float			m_flTimeLastCloseToPlayer;
 	string_t		m_iszDenyCommandConcept;
+	bool			m_bEnemyKilled;
 
 	CSimpleSimTimer	m_AutoSummonTimer;
 	Vector			m_vAutoSummonAnchor;

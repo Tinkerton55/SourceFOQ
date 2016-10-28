@@ -1061,6 +1061,9 @@ void CNPC_Citizen::PrescheduleThink()
 			}
 		}
 	}
+	if (HasCondition(COND_ENEMY_DEAD)) {
+		m_bEnemyKilled = true;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1168,6 +1171,10 @@ int CNPC_Citizen::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 //-----------------------------------------------------------------------------
 int CNPC_Citizen::SelectSchedule()
 {
+	if (m_bEnemyKilled == true) {
+		m_bEnemyKilled = true;
+		return SCHED_IDLE_WANDER;
+	}
 	if (HasCondition(COND_NEW_ENEMY)) {
 		//Tinkerton: Alert the player to our presence
 		SentenceStop();
