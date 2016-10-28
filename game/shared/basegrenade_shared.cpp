@@ -172,7 +172,8 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 	// Use the thrower's position as the reported position
 	Vector vecReported = m_hThrower ? m_hThrower->GetAbsOrigin() : vec3_origin;
 	
-	CTakeDamageInfo info( this, m_hThrower, GetBlastForce(), GetAbsOrigin(), m_flDamage, bitsDamageType, 0, &vecReported );
+	//Tinkerton: Damage halved because it was OP
+	CTakeDamageInfo info( this, m_hThrower, GetBlastForce(), GetAbsOrigin(), m_flDamage/2.0f, bitsDamageType, 0, &vecReported );
 
 	RadiusDamage( info, GetAbsOrigin(), m_DmgRadius, CLASS_NONE, NULL );
 
