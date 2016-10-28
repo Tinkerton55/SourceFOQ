@@ -38,7 +38,7 @@
 #define BOLT_AIR_VELOCITY	2500
 #define BOLT_WATER_VELOCITY	1500
 
-#define CROSSBOW_AMMO_CLIP	40
+#define CROSSBOW_AMMO_CLIP	20
 
 extern ConVar sk_plr_dmg_crossbow;
 extern ConVar sk_npc_dmg_crossbow;
@@ -502,7 +502,7 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 CWeaponCrossbow::CWeaponCrossbow( void )
 {
-	m_bReloadsSingly	= true;
+	m_bReloadsSingly	= false;
 	m_bFiresUnderwater	= true;
 	m_bAltFiresUnderwater = true;
 	m_bInZoom			= false;
@@ -534,6 +534,7 @@ void CWeaponCrossbow::Precache( void )
 //-----------------------------------------------------------------------------
 void CWeaponCrossbow::PrimaryAttack( void )
 {
+
 	if ( m_bInZoom && g_pGameRules->IsMultiplayer() )
 	{
 //		FireSniperBolt();
@@ -551,6 +552,7 @@ void CWeaponCrossbow::PrimaryAttack( void )
 	else {
 		m_bMustReload = false;
 	}
+
 	//SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) );
 	SetWeaponIdleTime(gpGlobals->curtime + 0.1f);
 
@@ -579,7 +581,7 @@ bool CWeaponCrossbow::Reload( void )
 	if ( BaseClass::Reload() )
 	{
 		m_iClip1 = CROSSBOW_AMMO_CLIP;
-		m_flNextPrimaryAttack = m_flNextSecondaryAttack = gpGlobals->curtime + 2.0f;
+		m_flNextPrimaryAttack = gpGlobals->curtime + 2.0f;
 		m_bMustReload = false;
 		return true;
 	}
@@ -630,21 +632,22 @@ void CWeaponCrossbow::ItemPostFrame( void )
 //-----------------------------------------------------------------------------
 void CWeaponCrossbow::FireBolt( void )
 {
-	if ( m_iClip1 <= 0 )
-	{
-		//if ( !m_bFireOnEmpty )
-		//{
-			Reload();
-		//}
-		//else
-		//{
-			WeaponSound( EMPTY );
-			//m_flNextPrimaryAttack = 0.15;
-			m_flNextPrimaryAttack = 3.0;
+	//if ( m_iClip1 <= 0 )
+	//{
+	//	if ( !m_bFireOnEmpty )
+	//	{
+			//Reload();
+			//m_bMustReload = true;
 		//}
 
-		return;
-	}
+	//	else
+	//	{
+	//		WeaponSound( EMPTY );
+	//		m_flNextPrimaryAttack = 0.15;
+	//	}
+
+	//	return;
+	//}
 
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	
@@ -677,16 +680,6 @@ void CWeaponCrossbow::FireBolt( void )
 		}
 	}
 #endif
-	vecSrc.x += 13.0f;
-	vecSrc.z -= 16.0f;
-	if (m_bWhichBarrel) {
-		m_bWhichBarrel = false;
-		vecSrc.x += 4.0f;
-	}
-	else {
-		m_bWhichBarrel = true;
-		vecSrc.x -= 4.0f;
-	}
 
 	CCrossbowBolt *pBolt = CCrossbowBolt::BoltCreate( vecSrc, angAiming, pOwner );
 
@@ -718,7 +711,8 @@ void CWeaponCrossbow::FireBolt( void )
 
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack	= gpGlobals->curtime + 0.1;
 
-	DoLoadEffect();
+	pOwner->DoMuzzleFlash();
+	//DoLoadEffect();
 	SetChargerState( CHARGER_STATE_DISCHARGE );
 }
 
