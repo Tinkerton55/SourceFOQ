@@ -389,7 +389,7 @@ void CGrenadeFrag::VPhysicsUpdate( IPhysicsObject *pPhysics )
 		return;
 	}
 	m_inSolid = false;
-	if (tr.DidHit())
+	if (tr.DidHit() && !(GetFlags() & FL_ONGROUND))
 	{
 		m_flDetonateTime = gpGlobals->curtime;
 		Vector dir = vel;
