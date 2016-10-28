@@ -735,14 +735,14 @@ void CNPC_Combine::StartTask( const Task_t *pTask )
 	{
 	case TASK_COMBINE_SET_STANDING:
 		{
-			if ( pTask->flTaskData == 1.0f)
-			{
+			//if ( pTask->flTaskData == 1.0f)
+			//{
 				Stand();
-			}
-			else
+			//}
+			/*else
 			{
 				Crouch();
-			}
+			}*/
 			TaskComplete();
 		}
 		break;
@@ -1597,7 +1597,7 @@ int CNPC_Combine::SelectCombatSchedule()
 			{
 				if( GetEnemy() && random->RandomFloat( 0, 100 ) < 50 && CouldShootIfCrouching( GetEnemy() ) )
 				{
-					Crouch();
+					//Crouch();
 				}
 				else
 				{
@@ -2028,7 +2028,7 @@ int CNPC_Combine::SelectScheduleAttack()
 			}
 		}
 
-		DesireCrouch();
+		//DesireCrouch();
 		return SCHED_TAKE_COVER_FROM_ENEMY;
 	}
 
@@ -2200,8 +2200,8 @@ int CNPC_Combine::TranslateSchedule( int scheduleType )
 	case SCHED_HIDE_AND_RELOAD:
 		{
 			// stand up, just in case
-			// Stand();
-			// DesireStand();
+			Stand();
+			DesireStand();
 			if( CanGrenadeEnemy() && OccupyStrategySlot( SQUAD_SLOT_GRENADE1 ) && random->RandomInt( 0, 100 ) < 20 )
 			{
 				// If I COULD throw a grenade and I need to reload, 20% chance I'll throw a grenade before I hide to reload.
@@ -2243,7 +2243,8 @@ int CNPC_Combine::TranslateSchedule( int scheduleType )
 					if (dist > COMBINE_MIN_CROUCH_DISTANCE)
 					{
 						// try crouching
-						Crouch();
+						//Crouch();
+						//Tinkerton: Or don't
 
 						Vector targetPos = GetEnemy()->BodyTarget(GetActiveWeapon()->GetLocalOrigin());
 
@@ -3509,7 +3510,6 @@ DEFINE_SCHEDULE
  "		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_FAIL_ESTABLISH_LINE_OF_FIRE"
  "		TASK_SET_TOLERANCE_DISTANCE		48"
  "		TASK_GET_PATH_TO_ENEMY_LKP_LOS	0"
- "		TASK_COMBINE_SET_STANDING		1"
  "		TASK_SPEAK_SENTENCE				1"
  "		TASK_RUN_PATH					0"
  "		TASK_WAIT_FOR_MOVEMENT			0"
