@@ -353,6 +353,8 @@ void CNPC_Combine::Spawn( void )
 	CapabilitiesRemove(bits_CAP_AIM_GUN | bits_CAP_WEAPON_RANGE_ATTACK1 | bits_CAP_INNATE_RANGE_ATTACK1 | bits_CAP_MOVE_SHOOT);
 	NPCInit();
 	Stand();
+	m_MoveAndShootOverlay.SuspendMoveAndShoot(5.0f);
+	m_flStopMoveShootTime = FLT_MAX;
 }
 
 //-----------------------------------------------------------------------------
@@ -430,6 +432,7 @@ void CNPC_Combine::PrescheduleThink()
 {
 	BaseClass::PrescheduleThink();
 
+	ClearCondition(COND_CAN_RANGE_ATTACK1);
 	// Speak any queued sentences
 	m_Sentences.UpdateSentenceQueue();
 
@@ -446,19 +449,19 @@ void CNPC_Combine::PrescheduleThink()
 	if ( ai_debug_shoot_positions.GetBool() )
 		NDebugOverlay::Cross3D( EyePosition(), 16, 0, 255, 0, false, 0.1 );
 
-	if( gpGlobals->curtime >= m_flStopMoveShootTime )
-	{
-		// Time to stop move and shoot and start facing the way I'm running.
-		// This makes the combine look attentive when disengaging, but prevents
-		// them from always running around facing you.
-		//
-		// Only do this if it won't be immediately shut off again.
-		if( GetNavigator()->GetPathTimeToGoal() > 1.0f )
-		{
-			m_MoveAndShootOverlay.SuspendMoveAndShoot( 5.0f );
-			m_flStopMoveShootTime = FLT_MAX;
-		}
-	}
+	//if( gpGlobals->curtime >= m_flStopMoveShootTime )
+	//{
+	//	// Time to stop move and shoot and start facing the way I'm running.
+	//	// This makes the combine look attentive when disengaging, but prevents
+	//	// them from always running around facing you.
+	//	//
+	//	// Only do this if it won't be immediately shut off again.
+	//	if( GetNavigator()->GetPathTimeToGoal() > 1.0f )
+	//	{
+	//		m_MoveAndShootOverlay.SuspendMoveAndShoot( 5.0f );
+	//		m_flStopMoveShootTime = FLT_MAX;
+	//	}
+	//}
 
 	if( m_flGroundSpeed > 0 && GetState() == NPC_STATE_COMBAT && m_MoveAndShootOverlay.IsSuspended() )
 	{
@@ -994,14 +997,14 @@ void CNPC_Combine::StartTask( const Task_t *pTask )
 		}
 		break;
 	case TASK_RANGE_ATTACK1:
-		{
-			m_nShots = GetActiveWeapon()->GetRandomBurst();
-			m_flShotDelay = GetActiveWeapon()->GetFireRate();
+		//{
+		//	m_nShots = GetActiveWeapon()->GetRandomBurst();
+		//	m_flShotDelay = GetActiveWeapon()->GetFireRate();
 
-			m_flNextAttack = gpGlobals->curtime + m_flShotDelay - 0.1;
-			ResetIdealActivity( ACT_RANGE_ATTACK1 );
-			m_flLastAttackTime = gpGlobals->curtime;
-		}
+		//	m_flNextAttack = gpGlobals->curtime + m_flShotDelay - 0.1;
+		//	ResetIdealActivity( ACT_RANGE_ATTACK1 );
+		//	m_flLastAttackTime = gpGlobals->curtime;
+		//}
 		break;
 
 	case TASK_COMBINE_DIE_INSTANTLY:
@@ -1281,7 +1284,7 @@ void CNPC_Combine::BuildScheduleTestBits( void )
 
 	if (gpGlobals->curtime < m_flNextAttack)
 	{
-		ClearCustomInterruptCondition( COND_CAN_RANGE_ATTACK1 );
+		//ClearCustomInterruptCondition( COND_CAN_RANGE_ATTACK1 );
 		ClearCustomInterruptCondition( COND_CAN_RANGE_ATTACK2 );
 	}
 
@@ -1699,7 +1702,9 @@ int CNPC_Combine::SelectSchedule( void )
 		}
 		else {
 			float flDistToEnemy = (GetEnemy()->GetAbsOrigin() - GetAbsOrigin()).Length();
-			if (flDistToEnemy > COMBINE_MAX_THROW_DIST && !HasCondition(COND_ENEMY_UNREACHABLE)) {
+			if (HasCondition(COND_ENEMY_UNREACHABLE)) {
+				return SCHED_ALERT_STAND;
+			} else if (flDistToEnemy > COMBINE_MAX_THROW_DIST) {
 				return SCHED_CHASE_ENEMY;
 			}
 			else {
