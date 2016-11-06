@@ -1696,6 +1696,9 @@ int CNPC_Combine::SelectSchedule( void )
 {
 
 	if (GetEnemy() != NULL) {
+		if (HasCondition(COND_CAN_MELEE_ATTACK1)) {
+			return SCHED_MELEE_ATTACK1;
+		}
 		if (gpGlobals->curtime > m_flNextGrenadeCheck && !HasCondition(COND_ENEMY_OCCLUDED)) {
 			m_flNextGrenadeCheck = gpGlobals->curtime + COMBINE_GRENADE_THROW_DELAY;
 			return SCHED_COMBINE_RANGE_ATTACK2;
@@ -2459,20 +2462,36 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 						vecThrow *= -COMBINE_GRENADE_THROW_SPEED;
 
 						//Tinkerton: Arc the shot upwards the further the player is
-						float flTargetDistFraction = vecTargetDist / COMBINE_GRENADE_THROW_SPEED;
-						if (flTargetDistFraction > 1.0f) {
-							flTargetDistFraction = 1.0f;
+						//But not if he is below us
+
+						float flHeightDiff = vecEnemyPos.z - GetAbsOrigin().z;
+
+						if (flHeightDiff >= 0.0f) {
+							float flTargetDistFraction = vecTargetDist / COMBINE_GRENADE_THROW_SPEED;
+							if (flTargetDistFraction > 1.0f) {
+								flTargetDistFraction = 1.0f;
+							}
+
+							up *= flTargetDistFraction * 256.0f;
+
+							//Tinkerton: Add arc
+							vecThrow += up;
 						}
-						up *= flTargetDistFraction * 256.0f;
 
-						//Tinkerton: Add arc
-						vecThrow += up;
-
-						//Tinkerton: Remove the arc if there is world geometry in the grenade's way, or the player is below us
+						//Tinkerton: If the player is on a ledge above us, aim higher
+						Vector down;
+						GetVectors(NULL, NULL, &down);
+						down *= -128.0f;
 						trace_t tr;
-						AI_TraceLine(EyePosition(), EyePosition() + vecThrow, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+						AI_TraceLine(vecEnemyPos, vecEnemyPos + down, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
 						if (tr.DidHitWorld()) {
-							vecThrow -= up;
+								float flHeightDiff = tr.endpos.z - GetAbsOrigin().z;
+								if (flHeightDiff > 0.0f) {
+									GetVectors(NULL, NULL, &down);
+									//down *= -flHeightDiff * 1.5;
+									down *= -flHeightDiff;
+									vecThrow -= down;
+								}
 						}
 
 						Fraggrenade_Create(vecStart, vec3_angle, vecThrow, vecSpin, this, COMBINE_GRENADE_TIMER, true);
@@ -3522,6 +3541,7 @@ DEFINE_SCHEDULE
  "		TASK_SET_SCHEDULE				SCHEDULE:SCHED_COMBAT_FACE"
  "	"
  "	Interrupts "
+ "		COND_SEE_ENEMY"
  "		COND_NEW_ENEMY"
  "		COND_ENEMY_DEAD"
  //"		COND_CAN_RANGE_ATTACK1"
