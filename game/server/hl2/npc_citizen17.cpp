@@ -519,6 +519,7 @@ void CNPC_Citizen::Spawn()
 
 	m_flTimePlayerStare = FLT_MAX;
 	m_flNextAttack = gpGlobals->curtime + 2.0f;
+	m_flNextStop = gpGlobals->curtime;
 
 	AddEFlags( EFL_NO_DISSOLVE | EFL_NO_MEGAPHYSCANNON_RAGDOLL | EFL_NO_PHYSCANNON_INTERACTION );
 
@@ -1186,9 +1187,12 @@ int CNPC_Citizen::SelectSchedule()
 	if (!GetEnemy()) {
 		return SCHED_IDLE_STAND;
 	}
-	if (gpGlobals->curtime > m_flNextAttack) {
+	if ( gpGlobals->curtime > m_flNextStop && gpGlobals->curtime > m_flNextAttack && !HasCondition(COND_ENEMY_OCCLUDED)) {
 		m_flNextAttack = gpGlobals->curtime + 2.0f;
 		return SCHED_GRUNT_ATTACK;
+	}
+	else if (gpGlobals->curtime > m_flNextAttack && HasCondition(COND_ENEMY_OCCLUDED)) {
+		m_flNextStop = gpGlobals->curtime + 0.5f;
 	}
 	else {
 		return SCHED_GRUNT_CHASE;

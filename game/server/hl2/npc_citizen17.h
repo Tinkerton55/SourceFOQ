@@ -308,6 +308,7 @@ private:
 	float			m_flTimeLastCloseToPlayer;
 	string_t		m_iszDenyCommandConcept;
 	bool			m_bEnemyKilled;
+	float			m_flNextStop;
 
 	CSimpleSimTimer	m_AutoSummonTimer;
 	Vector			m_vAutoSummonAnchor;
