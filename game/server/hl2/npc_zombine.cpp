@@ -277,16 +277,19 @@ void CNPC_Zombine::PrescheduleThink( void )
 {
 	m_flNextFlinchTime = gpGlobals->curtime + 999;
 	//GatherGrenadeConditions();
-
+	
 	if (GetIdealActivity() == ACT_RUN && gpGlobals->curtime > m_flNextBoost && GetEnemy() != NULL) {
-		Vector vToEnemy = GetEnemy()->GetAbsOrigin() - GetAbsOrigin();
-		VectorNormalize(vToEnemy);
-
+		
+		//Tinkerton: Only boost if facing the player
 		Vector	vForward;
+		Vector vToEnemy = GetEnemy()->GetAbsOrigin() - GetAbsOrigin();
+		
+		VectorNormalize(vToEnemy);
 		AngleVectors(GetAbsAngles(), &vForward);
 
 		float dotpr = DotProduct(vForward, vToEnemy);
 		float flDist = EnemyDistance(GetEnemy());
+
 		if (dotpr > 0.0 && flDist > 96.0f)
 		{
 			Vector forward;
@@ -295,6 +298,10 @@ void CNPC_Zombine::PrescheduleThink( void )
 			ApplyAbsVelocityImpulse(forward);
 			m_flNextBoost = gpGlobals->curtime + 0.15f;
 		}
+
+		//Tinkerton: Also set ideal yaw to avoid bumping into walls
+		float flYaw = VecToYaw(vToEnemy);
+		GetMotor()->SetIdealYaw(flYaw);
 	}
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
