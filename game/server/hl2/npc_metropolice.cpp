@@ -499,6 +499,7 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 	BaseClass::PrescheduleThink();
 
 	if (IsAlive() && m_bShouldExplode == true && gpGlobals->curtime > m_flFireExplosionTime) {
+		StopSound(SOUND_FROM_WORLD, "NPC_Stalker.BurnWall");
 		FireSystem_StartFire(m_vecExplosionPosition, 192.0f, 0.1f, 0.1f, SF_FIRE_START_FULL, this, FIRE_NATURAL);
 		CTakeDamageInfo info(this, this, 25.0f, DMG_BURN, 0);
 		RadiusDamage(info, m_vecExplosionPosition, 96.0f, CLASS_NONE, NULL);
@@ -609,6 +610,7 @@ void CNPC_MetroPolice::Precache( void )
 	PrecacheScriptSound( "NPC_Metropolice.Shove" );
 	PrecacheScriptSound( "NPC_MetroPolice.WaterSpeech" );
 	PrecacheScriptSound( "NPC_MetroPolice.HidingSpeech" );
+	PrecacheScriptSound( "NPC_Stalker.BurnWall" );
 	enginesound->PrecacheSentenceGroup( "METROPOLICE" );
 
 	BaseClass::Precache();
@@ -2841,16 +2843,27 @@ void CNPC_MetroPolice::OnAnimEventDeployManhack( animevent_t *pEvent )
 {
 	trace_t tr;
 	CBaseEntity *pTarget = GetEnemy();
-	Vector vTargetPosition = pTarget->EyePosition();
+	//Vector vTargetPosition = pTarget->EyePosition();
+	Vector vTargetPosition = pTarget->GetAbsOrigin();
 	Vector vTargetVelocity = pTarget->GetAbsVelocity();
-
-	vTargetPosition += vTargetVelocity / METROPOLICE_FIRE_ATTACK_LEAD;
+	Vector vTargetLead = vTargetVelocity / METROPOLICE_FIRE_ATTACK_LEAD;
+	
+	UTIL_TraceLine(vTargetPosition, vTargetPosition + vTargetLead, (MASK_SOLID_BRUSHONLY), this, COLLISION_GROUP_NONE, &tr);
+	if (tr.DidHitWorld()) {
+		vTargetPosition = tr.endpos;
+	}
+	else {
+		vTargetPosition += vTargetLead;
+	}
 	UTIL_TraceLine(vTargetPosition, vTargetPosition + Vector(0, 0, -256), (MASK_SOLID_BRUSHONLY), this, COLLISION_GROUP_NONE, &tr);
 	
 	if ( tr.DidHitWorld() ) {
 		UTIL_DecalTrace(&tr, "Scorch");
 		vTargetPosition = tr.endpos;
-		
+		if (GetEnemy()->IsPlayer()) {
+			CSingleUserRecipientFilter filter(ToBasePlayer(GetEnemy()));
+			EmitSound(filter, SOUND_FROM_WORLD, "NPC_Stalker.BurnWall", &tr.endpos);
+		}
 		vTargetPosition.z += 4.0f;
 		m_vecExplosionPosition = vTargetPosition;
 		m_bShouldExplode = true;
@@ -4039,8 +4052,11 @@ int CNPC_MetroPolice::SelectSchedule( void )
 	if (HasCondition(COND_CAN_MELEE_ATTACK1)) {
 		return SCHED_MELEE_ATTACK1;
 	}
-
-	if (GetEnemy() != NULL && gpGlobals->curtime > m_flNextFireBurst) {
+	if (GetEnemy() != NULL && !HasCondition(COND_SEE_ENEMY)) {
+		//If we can't see our enemy we should chase him
+		return SCHED_METROPOLICE_CHASE_ENEMY;
+	}
+	else if (GetEnemy() != NULL && gpGlobals->curtime > m_flNextFireBurst && HasCondition(COND_SEE_ENEMY)) {
 		if (gpGlobals->curtime > m_flNextAttack) {
 
 			if (m_nCurrentFlame <= METROPOLICE_FIRE_ATTACK_MAX_BURST) {
@@ -4054,7 +4070,6 @@ int CNPC_MetroPolice::SelectSchedule( void )
 				return SCHED_METROPOLICE_CHASE_ENEMY;
 			}
 		}
-
 		else {
 			return SCHED_ALERT_STAND;
 		}
