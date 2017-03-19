@@ -1454,10 +1454,13 @@ int CNPC_CScanner::SelectSchedule(void)
 	// ----------------------------------------------------------
 	//if ( GetEnemy() != NULL && GetEnemy()->IsAlive() && m_bShouldInspect )
 	if (GetEnemy() == NULL) {
-		return SCHED_IDLE_STAND;
+		return SCHED_SLEEP;
 	}
 	if (GetEnemy() != NULL && GetEnemy()->IsAlive())
 	{
+		if (!HasCondition(COND_SEE_ENEMY)) {
+			return SCHED_SCANNER_CHASE_ENEMY;
+		}
 		if ((gpGlobals->curtime > m_flNextAttack) && HasCondition(COND_SEE_ENEMY) && m_bDoneWeaving == true) {
 			m_bDoneWeaving = false;
 			return SCHED_CSCANNER_ATTACK_FLASH;
@@ -1482,7 +1485,8 @@ int CNPC_CScanner::SelectSchedule(void)
 		// Patrol if the enemy has vanished
 		if ( HasCondition( COND_LOST_ENEMY ) )
 			return SCHED_SCANNER_PATROL;
-		
+
+
 		// Chase via route if we're directly blocked
 		if ( HasCondition( COND_SCANNER_FLY_BLOCKED ) )
 			return SCHED_SCANNER_CHASE_ENEMY;
