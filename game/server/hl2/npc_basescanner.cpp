@@ -91,7 +91,8 @@ void CNPC_BaseScanner::Spawn(void)
 	AddEffects( EF_NOSHADOW );
 #endif // _XBOX
 
-	SetHullType( HULL_TINY_CENTERED );
+	//SetHullType( HULL_TINY_CENTERED );
+	SetHullType(HULL_SMALL_CENTERED);
 	SetHullSizeNormal();
 
 	SetSolid( SOLID_BBOX );
@@ -392,6 +393,10 @@ int CNPC_BaseScanner::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	{
 		StartSmokeTrail();
 	}
+	//Stop moving when hit
+	Vector vCurrVelocity = GetCurrentVelocity();
+	vCurrVelocity *= -1;
+	ApplyAbsVelocityImpulse(vCurrVelocity);
 
 	return (BaseClass::OnTakeDamage_Alive( info ));
 }
@@ -1790,7 +1795,7 @@ AI_BEGIN_CUSTOM_NPC( npc_basescanner, CNPC_BaseScanner )
 		""
 		""
 		"	Interrupts"
-		"		COND_SCANNER_FLY_CLEAR"
+		"		COND_SEE_ENEMY"
 		"		COND_NEW_ENEMY"
 		"		COND_ENEMY_DEAD"
 		"		COND_LOST_ENEMY"
