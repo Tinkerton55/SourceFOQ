@@ -290,7 +290,7 @@ void CNPC_Zombine::PrescheduleThink( void )
 		float dotpr = DotProduct(vForward, vToEnemy);
 		float flDist = EnemyDistance(GetEnemy());
 
-		if (dotpr > 0.0 && flDist > 96.0f)
+		if (dotpr > 0.0 && flDist > 64.0f)
 		{
 			Vector forward;
 			GetVectors(&forward, NULL, NULL);
@@ -298,10 +298,11 @@ void CNPC_Zombine::PrescheduleThink( void )
 			ApplyAbsVelocityImpulse(forward);
 			m_flNextBoost = gpGlobals->curtime + 0.15f;
 		}
-
-		//Tinkerton: Also set ideal yaw to avoid bumping into walls
-		float flYaw = VecToYaw(vToEnemy);
-		GetMotor()->SetIdealYaw(flYaw);
+		if (HasCondition(COND_SEE_ENEMY)) {
+			//Tinkerton: Also set ideal yaw to avoid bumping into walls
+			float flYaw = VecToYaw(vToEnemy);
+			GetMotor()->SetIdealYaw(flYaw);
+		}
 	}
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
