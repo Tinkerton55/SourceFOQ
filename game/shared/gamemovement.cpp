@@ -2466,6 +2466,7 @@ bool CGameMovement::CheckJumpButton( void )
 		mv->m_vecVelocity[2] += flGroundFactor * flMul;  // 2 * gravity * height
 	}
 
+	// Removed in FOQ
 	// Add a little forward velocity based on your current forward velocity - if you are not sprinting.
 //#if defined( HL2_DLL ) || defined( HL2_CLIENT_DLL )
 //	if ( gpGlobals->maxClients == 1 )
@@ -2496,6 +2497,64 @@ bool CGameMovement::CheckJumpButton( void )
 //		VectorAdd( (vecForward*flSpeedAddition), mv->m_vecVelocity, mv->m_vecVelocity );
 //	}
 //#endif
+
+	// Slopejump
+
+	// Trace BBox to see if we're standing on a slope
+	trace_t groundTrc;
+	const Vector vecEndTrc = player->GetAbsOrigin() + Vector(0.0f, 0.0f, -128.0f);
+	TracePlayerBBox(player->GetAbsOrigin(), vecEndTrc, PlayerSolidMask(), COLLISION_GROUP_PLAYER_MOVEMENT, groundTrc);
+	
+	// Check if we are standing on a walkable slope
+	if (groundTrc.plane.normal.z >= 0.7f && groundTrc.plane.normal.z < 1.0f) {
+
+		// On slope
+		
+		float momentumTransferFactorZ = 1.0f;
+		float momentumTransferFactorXY = 1.0f;
+
+		// Check if we are moving up or down the slope
+
+		Vector vecForward = mv->m_vecVelocity;
+		vecForward.z = 0;
+		VectorNormalize(vecForward);
+
+		vec_t slopeDotPr = DotProduct(vecForward, groundTrc.plane.normal);
+
+		// Get normalized movement velocity to use for multiplication
+		Vector vecMultiplier;
+		AngleVectors(mv->m_vecViewAngles, &vecMultiplier);
+		VectorNormalize(vecMultiplier);
+
+		if (slopeDotPr < 0.0f) {
+			// We are moving up the slope
+			// Increase vertical momentum at expense of horizontal momentum
+
+			momentumTransferFactorZ = (1.0f - groundTrc.plane.normal.z) * 2;
+			vecMultiplier.z = 1.25f + momentumTransferFactorZ;
+			momentumTransferFactorXY = 1.0f - (momentumTransferFactorZ / 2);
+			vecMultiplier.x = momentumTransferFactorXY;
+			vecMultiplier.y = momentumTransferFactorXY;
+		}
+		else if (slopeDotPr > 0.0f) {
+			// We are moving down the slope
+			// Increase horizontal momentum at expense of vertical momentum
+			momentumTransferFactorXY = (1.0f - groundTrc.plane.normal.z) * 2;
+			momentumTransferFactorZ = 1.0f - (momentumTransferFactorZ / 2);
+			vecMultiplier.x = 1.0f + momentumTransferFactorXY;
+			vecMultiplier.y = 1.0f + momentumTransferFactorXY;
+			vecMultiplier.z = momentumTransferFactorZ;
+		}
+		else {
+			// We are moving side to side, so no adjustments shall be made
+			vecMultiplier.x = 1.0f;
+			vecMultiplier.y = 1.0f;
+			vecMultiplier.z = 1.0f;
+		}
+		
+		// Multiply existing velocity with the momentum shift multiplier
+		mv->m_vecVelocity *= vecMultiplier;
+	}
 
 	FinishGravity();
 
