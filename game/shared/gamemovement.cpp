@@ -2498,8 +2498,7 @@ bool CGameMovement::CheckJumpButton( void )
 //	}
 //#endif
 
-	// Slopejump
-
+	// Slopejump implementation
 	// Trace BBox to see if we're standing on a slope
 	trace_t groundTrc;
 	const Vector vecEndTrc = player->GetAbsOrigin() + Vector(0.0f, 0.0f, -128.0f);
