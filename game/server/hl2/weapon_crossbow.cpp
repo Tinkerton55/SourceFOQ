@@ -578,10 +578,34 @@ void CWeaponCrossbow::SecondaryAttack( void )
 //-----------------------------------------------------------------------------
 bool CWeaponCrossbow::Reload( void )
 {
+	int iPlayerAmmoCount;
+	int iAmmoSpent;
+	int iAmmoDifference;
+
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+		return false;
+	
+	iPlayerAmmoCount = pOwner->GetAmmoCount(m_iPrimaryAmmoType);
+	iAmmoSpent = GetMaxClip1() - m_iClip1;
+
+	if (iPlayerAmmoCount <= 0)
+		return false;
+
+	if (iAmmoSpent <= 0)
+		return false;
+
 	if ( BaseClass::Reload() )
 	{
+		iAmmoDifference = iPlayerAmmoCount - iAmmoSpent;
+		SendWeaponAnim(ACT_VM_RELOAD);
+		if (iAmmoDifference < 0) {
+			iAmmoDifference = 0;
+		}
+		pOwner->SetAmmoCount(iAmmoDifference, m_iPrimaryAmmoType);
 		m_iClip1 = CROSSBOW_AMMO_CLIP;
-		m_flNextPrimaryAttack = gpGlobals->curtime + 2.0f;
+		m_flNextPrimaryAttack = gpGlobals->curtime + 1.75f;
+		//m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration(ACT_VM_RELOAD);
 		m_bMustReload = false;
 		return true;
 	}
@@ -658,6 +682,8 @@ void CWeaponCrossbow::FireBolt( void )
 
 	Vector vecAiming	= pOwner->GetAutoaimVector( 0 );
 	Vector vecSrc		= pOwner->Weapon_ShootPosition();
+	//If you want to shoot bolts out of your dick:
+	//Vector vecSrc		= GetAbsOrigin();
 
 	QAngle angAiming;
 
