@@ -268,6 +268,9 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 //-----------------------------------------------------------------------------
 Activity CWeaponSMG1::GetPrimaryAttackActivity( void )
 {
+	SecondaryAttack();
+	return ACT_SMG2_DRYFIRE2;
+
 	if ( m_nShotsFired < 2 )
 		return ACT_VM_PRIMARYATTACK;
 
@@ -284,6 +287,7 @@ Activity CWeaponSMG1::GetPrimaryAttackActivity( void )
 //-----------------------------------------------------------------------------
 bool CWeaponSMG1::Reload( void )
 {
+	return false;
 	bool fRet;
 	float fCacheTime = m_flNextSecondaryAttack;
 
