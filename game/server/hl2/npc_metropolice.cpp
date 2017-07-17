@@ -496,6 +496,10 @@ void CNPC_MetroPolice::OnScheduleChange()
 //-----------------------------------------------------------------------------
 void CNPC_MetroPolice::PrescheduleThink( void )
 {
+	if (HasCondition(COND_NEW_ENEMY)) {
+		m_Sentences.Speak("METROPOLICE_GO_ALERT", SENTENCE_PRIORITY_HIGH, SENTENCE_CRITERIA_ALWAYS);
+	}
+
 	BaseClass::PrescheduleThink();
 
 	if (IsAlive() && m_bShouldExplode == true && gpGlobals->curtime > m_flFireExplosionTime) {
@@ -3126,6 +3130,10 @@ void CNPC_MetroPolice::ReleaseManhack( void )
 //-----------------------------------------------------------------------------
 void CNPC_MetroPolice::Event_Killed( const CTakeDamageInfo &info )
 {
+	
+	//Tinkerton: We need to stop the flamestrike sound in case we are killed
+	StopSound(SOUND_FROM_WORLD, "NPC_Stalker.BurnWall");
+
 	// Release the manhack if we're in the middle of deploying him
 	if ( m_hManhack && m_hManhack->IsAlive() )
 	{
