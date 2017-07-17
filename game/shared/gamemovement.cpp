@@ -2498,7 +2498,7 @@ bool CGameMovement::CheckJumpButton( void )
 //	}
 //#endif
 
-	// Slopejump implementation
+	// Tinkerton: Slopejump implementation
 	// Trace BBox to see if we're standing on a slope
 	trace_t groundTrc;
 	const Vector vecEndTrc = player->GetAbsOrigin() + Vector(0.0f, 0.0f, -128.0f);
@@ -2531,19 +2531,21 @@ bool CGameMovement::CheckJumpButton( void )
 
 			momentumTransferFactorZ = (1.0f - groundTrc.plane.normal.z) * 2;
 			vecMultiplier.z = 1.25f + momentumTransferFactorZ;
-			momentumTransferFactorXY = 1.0f - (momentumTransferFactorZ / 2);
+			//momentumTransferFactorXY = 1.0f - (momentumTransferFactorZ / 2);
+			momentumTransferFactorXY = 1.0f;
 			vecMultiplier.x = momentumTransferFactorXY;
 			vecMultiplier.y = momentumTransferFactorXY;
 		}
-		else if (slopeDotPr > 0.0f) {
+		//else if (slopeDotPr > 0.0f) {
 			// We are moving down the slope
 			// Increase horizontal momentum at expense of vertical momentum
-			momentumTransferFactorXY = (1.0f - groundTrc.plane.normal.z) * 2;
-			momentumTransferFactorZ = 1.0f - (momentumTransferFactorZ / 2);
-			vecMultiplier.x = 1.0f + momentumTransferFactorXY;
-			vecMultiplier.y = 1.0f + momentumTransferFactorXY;
-			vecMultiplier.z = momentumTransferFactorZ;
-		}
+			//momentumTransferFactorXY = (1.0f - groundTrc.plane.normal.z) * 2;
+			//momentumTransferFactorZ = 1.0f - (momentumTransferFactorZ / 2);
+			//momentumTransferFactorZ = 1.0f;
+			//vecMultiplier.x = 1.0f + momentumTransferFactorXY;
+			//vecMultiplier.y = 1.0f + momentumTransferFactorXY;
+			//vecMultiplier.z = momentumTransferFactorZ;
+		//}
 		else {
 			// We are moving side to side, so no adjustments shall be made
 			vecMultiplier.x = 1.0f;
