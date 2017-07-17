@@ -1821,6 +1821,10 @@ void CNPC_Vortigaunt::OnRestore( void )
 //-----------------------------------------------------------------------------
 void CNPC_Vortigaunt::PrescheduleThink( void )
 {
+	if (HasCondition(COND_NEW_ENEMY)) {
+		EmitSound("NPC_Vortigaunt.SuitOn");
+	}
+
 	// Update our healing (if active)
 	MaintainHealSchedule();
 
