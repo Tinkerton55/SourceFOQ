@@ -461,11 +461,13 @@ int CNPC_CScanner::TranslateSchedule( int scheduleType )
 	{
 		case SCHED_IDLE_STAND:
 		{
-			return SCHED_SCANNER_PATROL;
+			//return SCHED_SCANNER_PATROL;
+			return SCHED_CSCANNER_SPOTLIGHT_HOVER;
 		}
 
 		case SCHED_SCANNER_PATROL:
-			return SCHED_CSCANNER_PATROL;
+			//return SCHED_CSCANNER_PATROL;
+			return SCHED_CSCANNER_SPOTLIGHT_HOVER;
 	}
 	return BaseClass::TranslateSchedule(scheduleType);
 }
@@ -1454,7 +1456,7 @@ int CNPC_CScanner::SelectSchedule(void)
 	// ----------------------------------------------------------
 	//if ( GetEnemy() != NULL && GetEnemy()->IsAlive() && m_bShouldInspect )
 	if (GetEnemy() == NULL) {
-		return SCHED_SLEEP;
+		return SCHED_CSCANNER_SPOTLIGHT_HOVER;
 	}
 	if (GetEnemy() != NULL && GetEnemy()->IsAlive())
 	{
@@ -2987,12 +2989,12 @@ AI_BEGIN_CUSTOM_NPC( npc_cscanner, CNPC_CScanner )
 		"		TASK_WAIT							1"
 		""
 		"	Interrupts"
-		"		COND_CSCANNER_SPOT_ON_TARGET"
-		"		COND_CSCANNER_INSPECT_DONE"
-		"		COND_SCANNER_FLY_BLOCKED"
 		"		COND_NEW_ENEMY"
 		"		COND_SCANNER_GRABBED_BY_PHYSCANNON"
 	)
+	//"		COND_CSCANNER_SPOT_ON_TARGET"
+	//"		COND_CSCANNER_INSPECT_DONE"
+	//"		COND_SCANNER_FLY_BLOCKED"
 
 	//=========================================================
 	// > SCHED_CSCANNER_SPOTLIGHT_INSPECT_POS
