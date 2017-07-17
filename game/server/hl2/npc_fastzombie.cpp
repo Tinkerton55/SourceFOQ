@@ -670,7 +670,7 @@ void CFastZombie::Spawn( void )
 	SetBloodColor( BLOOD_COLOR_YELLOW );
 #endif // HL2_EPISODIC
 
-	m_iHealth			= 50;
+	m_iHealth			= 75;
 	m_flFieldOfView		= 0.2;
 
 	CapabilitiesClear();
@@ -945,7 +945,7 @@ void CFastZombie::AlertSound( void )
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 #define FASTZOMBIE_MINLEAP			1
-#define FASTZOMBIE_MAXLEAP			2000
+#define FASTZOMBIE_MAXLEAP			2048
 float CFastZombie::InnateRange1MaxRange( void ) 
 { 
 	return FASTZOMBIE_MAXLEAP; 
@@ -995,16 +995,16 @@ int CFastZombie::RangeAttack1Conditions( float flDot, float flDist )
 
 	// Don't jump at the player unless he's facing me.
 	// This allows the player to get away if he turns and sprints
-	CBasePlayer *pPlayer = static_cast<CBasePlayer*>( GetEnemy() );
+	//CBasePlayer *pPlayer = static_cast<CBasePlayer*>( GetEnemy() );
 
-	if( pPlayer )
-	{
+	//if( pPlayer )
+	//{
 		// If the enemy is a player, don't attack from behind!
-		if( !pPlayer->FInViewCone( this ) )
-		{
-			return COND_NONE;
-		}
-	}
+		//if( !pPlayer->FInViewCone( this ) )
+		//{
+			//return COND_NONE;
+		//}
+	//}
 
 	// Drumroll please!
 	// The final check! Is the path from my position to halfway between me
@@ -1469,7 +1469,7 @@ void CFastZombie::LeapAttackTouch( CBaseEntity *pOther )
 	forward *= 500;
 	QAngle qaPunch( 15, random->RandomInt(-5,5), random->RandomInt(-5,5) );
 	
-	ClawAttack( GetClawAttackRange(), 5, qaPunch, forward, ZOMBIE_BLOOD_BOTH_HANDS );
+	ClawAttack( GetClawAttackRange(), 10, qaPunch, forward, ZOMBIE_BLOOD_BOTH_HANDS );
 
 	SetTouch( NULL );
 }
