@@ -280,6 +280,8 @@ void CNPC_Zombine::PrescheduleThink( void )
 	
 	if (GetIdealActivity() == ACT_RUN && gpGlobals->curtime > m_flNextBoost && GetEnemy() != NULL) {
 		
+		GetNavigator()->SetGoalTolerance(96.0f);
+
 		//Tinkerton: Only boost if facing the player
 		Vector	vForward;
 		Vector vToEnemy = GetEnemy()->GetAbsOrigin() - GetAbsOrigin();
@@ -298,11 +300,11 @@ void CNPC_Zombine::PrescheduleThink( void )
 			ApplyAbsVelocityImpulse(forward);
 			m_flNextBoost = gpGlobals->curtime + 0.15f;
 		}
-		if (HasCondition(COND_SEE_ENEMY)) {
-			//Tinkerton: Also set ideal yaw to avoid bumping into walls
-			float flYaw = VecToYaw(vToEnemy);
-			GetMotor()->SetIdealYaw(flYaw);
-		}
+		//if (HasCondition(COND_SEE_ENEMY)) {
+		//	//Tinkerton: Also set ideal yaw to avoid bumping into walls
+		//	float flYaw = VecToYaw(vToEnemy);
+		//	GetMotor()->SetIdealYaw(flYaw);
+		//}
 	}
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
