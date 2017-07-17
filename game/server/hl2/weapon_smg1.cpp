@@ -36,6 +36,7 @@ public:
 	
 	void	Precache( void );
 	void	AddViewKick( void );
+	virtual void	PrimaryAttack(void);
 	void	SecondaryAttack( void );
 
 	int		GetMinBurst() { return 2; }
@@ -269,7 +270,7 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 Activity CWeaponSMG1::GetPrimaryAttackActivity( void )
 {
 	SecondaryAttack();
-	return ACT_SMG2_DRYFIRE2;
+	return ACT_VM_DRYFIRE;
 
 	if ( m_nShotsFired < 2 )
 		return ACT_VM_PRIMARYATTACK;
@@ -283,26 +284,78 @@ Activity CWeaponSMG1::GetPrimaryAttackActivity( void )
 	return ACT_VM_RECOIL3;
 }
 
+void CWeaponSMG1::PrimaryAttack( void ) {
+	SecondaryAttack();
+	return;
+}
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 bool CWeaponSMG1::Reload( void )
 {
-	return false;
-	bool fRet;
-	float fCacheTime = m_flNextSecondaryAttack;
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+		return false;
 
-	fRet = DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
-	if ( fRet )
-	{
-		// Undo whatever the reload process has done to our secondary
-		// attack timer. We allow you to interrupt reloading to fire
-		// a grenade.
-		m_flNextSecondaryAttack = GetOwner()->m_flNextAttack = fCacheTime;
+	// If I don't have any spare ammo, I can't reload
+	if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+		return false;
 
-		WeaponSound( RELOAD );
-	}
+#ifdef CLIENT_DLL
+		// Play reload
+		WeaponSound(RELOAD);
+#endif
+		SendWeaponAnim(ACT_VM_RELOAD);
 
-	return fRet;
+		// Play the player's reload animation
+		if (pOwner->IsPlayer())
+		{
+			((CBasePlayer *)pOwner)->SetAnimation(PLAYER_RELOAD);
+
+			float flSequenceEndTime = gpGlobals->curtime + SequenceDuration();
+			pOwner->SetNextAttack(flSequenceEndTime);
+			m_flNextPrimaryAttack = m_flNextSecondaryAttack = flSequenceEndTime;
+
+			WeaponSound(RELOAD);
+			int iRemainderAmmo = pOwner->GetAmmoCount(m_iPrimaryAmmoType) - GetDefaultClip1();
+			if (iRemainderAmmo > 4) {
+				m_iClip1 = GetDefaultClip1() - m_iClip1;
+				pOwner->RemoveAmmo(m_iClip1, m_iPrimaryAmmoType);
+				m_iClip1 = GetDefaultClip1();
+			}
+			else {
+			int iClipDiff = GetDefaultClip1() - m_iClip1;
+				if (iClipDiff > pOwner->GetAmmoCount(m_iPrimaryAmmoType)) {
+					m_iClip1 += pOwner->GetAmmoCount(m_iPrimaryAmmoType);
+					pOwner->RemoveAmmo(pOwner->GetAmmoCount(m_iPrimaryAmmoType), m_iPrimaryAmmoType);
+				}
+				else {
+					m_iClip1 = GetDefaultClip1();
+					pOwner->RemoveAmmo(iClipDiff, m_iPrimaryAmmoType);
+				}
+			}
+
+			return true;
+		}
+
+
+	//return false;
+	//bool fRet;
+	//float fCacheTime = m_flNextSecondaryAttack;
+
+	//fRet = DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+	//if ( fRet )
+	//{
+	//	// Undo whatever the reload process has done to our secondary
+	//	// attack timer. We allow you to interrupt reloading to fire
+	//	// a grenade.
+	//	m_flNextSecondaryAttack = GetOwner()->m_flNextAttack = fCacheTime;
+
+	//	WeaponSound( RELOAD );
+	//}
+
+	//return fRet;
+		return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -335,16 +388,17 @@ void CWeaponSMG1::SecondaryAttack( void )
 		return;
 
 	//Must have ammo
-	if ( ( pPlayer->GetAmmoCount( m_iSecondaryAmmoType ) <= 0 ) || ( pPlayer->GetWaterLevel() == 3 ) )
-	{
-		SendWeaponAnim( ACT_VM_DRYFIRE );
-		BaseClass::WeaponSound( EMPTY );
-		m_flNextSecondaryAttack = gpGlobals->curtime + 0.25f;
-		return;
-	}
+	//if ( ( pPlayer->GetAmmoCount( m_iSecondaryAmmoType ) <= 0 ) || ( pPlayer->GetWaterLevel() == 3 ) )
+	//if ((pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0) || (pPlayer->GetWaterLevel() == 3))
+	//{
+	//	SendWeaponAnim( ACT_VM_DRYFIRE );
+	//	BaseClass::WeaponSound( EMPTY );
+	//	m_flNextSecondaryAttack = gpGlobals->curtime + 0.25f;
+	//	return;
+	//}
 
-	if( m_bInReload )
-		m_bInReload = false;
+	//if( m_bInReload )
+		//m_bInReload = false;
 
 	// MUST call sound before removing a round from the clip of a CMachineGun
 	BaseClass::WeaponSound( WPN_DOUBLE );
@@ -355,7 +409,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 	Vector	vecThrow;
 	// Don't autoaim on grenade tosses
 	AngleVectors( pPlayer->EyeAngles() + pPlayer->GetPunchAngle(), &vecThrow );
-	VectorScale( vecThrow, 1000.0f, vecThrow );
+	VectorScale( vecThrow, 800.0f, vecThrow );
 	
 	//Create the grenade
 	QAngle angles;
@@ -365,17 +419,18 @@ void CWeaponSMG1::SecondaryAttack( void )
 	vecSpin.y = random->RandomFloat(-1000.0, 1000.0);
 	vecSpin.z = random->RandomFloat(-1000.0, 1000.0);
 	Vector forward;
+	Vector up;
 
-	GetVectors(&forward, NULL, NULL);
+	GetVectors(&forward, NULL, &up);
 	//CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecSrc, angles, pPlayer );
 	
-	CBaseGrenade *pGrenade = Fraggrenade_Create(vecSrc + forward * 16.0, angles, vecThrow, vecSpin, this, 3.5, false);
-	pGrenade->SetAbsVelocity( vecThrow );
+	CBaseGrenade *pGrenade = Fraggrenade_Create(vecSrc + forward, angles, vecThrow, vecSpin, GetOwner(), 3.5, false);
+	pGrenade->SetAbsVelocity(vecThrow);
 
 	pGrenade->SetLocalAngularVelocity( RandomAngle( -400, 400 ) );
 	pGrenade->SetMoveType( MOVETYPE_VPHYSICS, MOVECOLLIDE_FLY_BOUNCE);
 	pGrenade->SetThrower( GetOwner() );
-	pGrenade->SetDamage( sk_plr_dmg_smg1_grenade.GetFloat() );
+	pGrenade->SetDamage( sk_plr_dmg_smg1_grenade.GetFloat() * 2.0f );
 
 	SendWeaponAnim( ACT_VM_SECONDARYATTACK );
 
@@ -385,7 +440,11 @@ void CWeaponSMG1::SecondaryAttack( void )
 	pPlayer->SetAnimation( PLAYER_ATTACK1 );
 
 	// Decrease ammo
-	pPlayer->RemoveAmmo( 1, m_iSecondaryAmmoType );
+	//pPlayer->RemoveAmmo( 1, m_iPrimaryAmmoType );
+	//Wanna try this with primary ammo
+	if (m_iClip1 > 0) {
+		m_iClip1--;
+	}
 
 	// Can shoot again immediately
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.5f;
@@ -396,8 +455,13 @@ void CWeaponSMG1::SecondaryAttack( void )
 	// Register a muzzleflash for the AI.
 	pPlayer->SetMuzzleFlashTime( gpGlobals->curtime + 0.5 );	
 
-	m_iSecondaryAttacks++;
+	m_iPrimaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, false, GetClassname() );
+	
+	if (m_iClip1 <= 0) {
+		Reload();
+		return;
+	}
 }
 
 #define	COMBINE_MIN_GRENADE_CLEAR_DIST 256
