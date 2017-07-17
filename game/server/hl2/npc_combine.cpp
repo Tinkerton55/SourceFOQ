@@ -413,6 +413,14 @@ void CNPC_Combine::GatherConditions()
 			}
 		}
 
+		if (GetEnemy() != NULL && !HasCondition(COND_ENEMY_OCCLUDED)) {
+			trace_t tr;
+			UTIL_TraceLine(EyePosition() - Vector(0.0f, 0.0f, -80.0f), GetEnemy()->GetAbsOrigin(), MASK_SOLID, this, COLLISION_GROUP_NONE, &tr);
+			if (tr.DidHitWorld()) {
+				SetCondition(COND_ENEMY_OCCLUDED);
+			}
+		}
+
 		if( IsUsingTacticalVariant(TACTICAL_VARIANT_PRESSURE_ENEMY_UNTIL_CLOSE) )
 		{
 			if( GetEnemy() != NULL && !HasCondition(COND_ENEMY_OCCLUDED) )
@@ -445,7 +453,7 @@ void CNPC_Combine::PrescheduleThink()
 		ClearCondition( COND_COMBINE_ON_FIRE );
 	}
 	if (HasCondition(COND_NEW_ENEMY)) {
-		m_Sentences.Speak("COMBINE_ALERT");
+		GetSentences()->Speak("COMBINE_GREN", SENTENCE_PRIORITY_INVALID, SENTENCE_CRITERIA_ALWAYS);
 	}
 	extern ConVar ai_debug_shoot_positions;
 	if ( ai_debug_shoot_positions.GetBool() )
@@ -2779,6 +2787,7 @@ void CNPC_Combine::DeathSound ( void )
 //=========================================================
 void CNPC_Combine::IdleSound( void )
 {
+	return;
 	if (g_fCombineQuestion || random->RandomInt(0,1))
 	{
 		if (!g_fCombineQuestion)
