@@ -1461,6 +1461,7 @@ int CNPC_CScanner::SelectSchedule(void)
 	if (GetEnemy() != NULL && GetEnemy()->IsAlive())
 	{
 		if (!HasCondition(COND_SEE_ENEMY)) {
+			m_nFlyMode = SCANNER_FLY_CHASE;
 			return SCHED_SCANNER_CHASE_ENEMY;
 		}
 		if ((gpGlobals->curtime > m_flNextAttack) && HasCondition(COND_SEE_ENEMY) && m_bDoneWeaving == true) {
