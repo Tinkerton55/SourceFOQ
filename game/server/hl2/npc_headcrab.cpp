@@ -2639,7 +2639,7 @@ void CFastHeadcrab::PrescheduleThink( void )
 {
 #if 1 // #IF 0 this to stop the accelrating/decelerating movement.
 #define HEADCRAB_ACCELERATION 0.1
-	if (m_bIsTicking && gpGlobals->curtime > m_flTimeToLive) {
+	if (IsAlive() && m_bIsTicking && gpGlobals->curtime > m_flTimeToLive) {
 		CTakeDamageInfo radiusattack_info(this, this, 10.0f, DMG_ACID, 0);
 		RadiusDamage(radiusattack_info, GetAbsOrigin(), 64.0f, CLASS_NONE, NULL);
 
