@@ -413,13 +413,15 @@ void CNPC_Combine::GatherConditions()
 			}
 		}
 
-		if (GetEnemy() != NULL && !HasCondition(COND_ENEMY_OCCLUDED)) {
-			trace_t tr;
-			UTIL_TraceLine(EyePosition() - Vector(0.0f, 0.0f, -80.0f), GetEnemy()->GetAbsOrigin(), MASK_SOLID, this, COLLISION_GROUP_NONE, &tr);
-			if (tr.DidHitWorld()) {
-				SetCondition(COND_ENEMY_OCCLUDED);
-			}
-		}
+		// Tinkerton: Set enemy being occluded if our lower half of the torso can't be seen
+		// !Find a way to fix this!
+		//if (GetEnemy() != NULL && !HasCondition(COND_ENEMY_OCCLUDED)) {
+		//	trace_t tr;
+		//	UTIL_TraceLine(EyePosition() - Vector(0.0f, 0.0f, -48.0f), GetEnemy()->EyePosition(), MASK_SOLID, this, COLLISION_GROUP_NONE, &tr);
+		//	if (tr.DidHitWorld()) {
+		//		SetCondition(COND_ENEMY_OCCLUDED);
+		//	}
+		//}
 
 		if( IsUsingTacticalVariant(TACTICAL_VARIANT_PRESSURE_ENEMY_UNTIL_CLOSE) )
 		{
